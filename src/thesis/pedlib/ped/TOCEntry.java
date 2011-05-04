@@ -3,11 +3,10 @@ package thesis.pedlib.ped;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class TOCEntry implements Comparable<TOCEntry> {
-	private String id;
+	private Resource resource;
 	private int order;
-	private String src;
-	private String label;
 	private List<TOCEntry> childs;
 	
 	TOCEntry(String id, int order){
@@ -23,19 +22,17 @@ public class TOCEntry implements Comparable<TOCEntry> {
 	}
 	
 	TOCEntry(String id,int order,String src, String label,ArrayList<TOCEntry> childs){
-		this.id = id;
+		this.resource = new Resource(id, label, src);
 		this.order = order;
-		this.src = src;
-		this.label = label;
 		this.childs = childs;
 	}
 	
 	public void setId(String id){
-		this.id = id;
+		this.resource.setId(id);
 	}
 	
 	public String getId(){
-		return id;
+		return this.resource.getId();
 	}
 	
 	public void setOrder(int order){
@@ -47,19 +44,19 @@ public class TOCEntry implements Comparable<TOCEntry> {
 	}
 	
 	public void setSrc(String src){
-		this.src = src;
+		this.resource.setHref(src);
 	}
 	
 	public String getSrc(){
-		return src;
+		return this.resource.getHref();
 	}
 	
 	public void setLabel(String label){
-		this.label = label;
+		this.resource.setTitle(label);
 	}
 	
 	public String getLabel(){
-		return label;
+		return resource.getTitle();
 	}
 	
 	public List<TOCEntry> getChilds(){
@@ -72,9 +69,7 @@ public class TOCEntry implements Comparable<TOCEntry> {
 		return childs;
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 */
+	
 	@Override
 	public int compareTo(TOCEntry another) {
 		if(another == null) return 1;

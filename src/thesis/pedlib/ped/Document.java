@@ -6,42 +6,60 @@ public class Document {
 	private Metadata metaData;
 	private TOC toc;
 	private String containerPath;
+	private Resources resources;
+	private Resource docResource;
 	
-	private PedParser pedParser;
 	
-	Document(String pedPath){
-		this.pedPath = pedPath;
-		
-		pedParser = new PedParser(this);
-		pedParser.read();
-		
+	public Document(){
 	}
 	
-	String getPedPath(){
+	public Document(String pedPath){
+		this.pedPath = pedPath;
+	}
+	
+	public String getPedPath(){
 		return pedPath;
 	}
 
-	void setMetadata(Metadata metadata){
+	public void setMetadata(Metadata metadata){
 		this.metaData = metadata;
 	}
 	
-	String getDocumentTitle(){
+	public String getDocumentTitle(){
 		return this.metaData.getTitle();
 	}
 	
-	String getContainerPath(){
+	public String getContainerPath(){
 		return containerPath;
 	}
 	
-	void setContainerPath(String containerPath){
+	public void setContainerPath(String containerPath){
 		this.containerPath = containerPath;
 	}
 	
-	void setTOC(TOC toc){
+	public void setTOC(TOC toc){
 		this.toc = toc;
 	}
 	
-	TOC getTOC(){
+	public TOC getTOC(){
 		return toc;
 	}
+
+
+	public Resources getResources() {
+		return resources;
+	}
+
+	public void setResources(Resources resources) {
+		this.resources = resources;
+	}
+	
+	public Resource getDocResource() {
+		return docResource;
+	}
+
+	public void setDocResource(Resource docResource) {
+		this.docResource = docResource;
+	}
+
 }

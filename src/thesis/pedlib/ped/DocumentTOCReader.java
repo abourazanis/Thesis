@@ -1,16 +1,11 @@
 package thesis.pedlib.ped;
 
-import java.io.File;
-import java.io.InputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-import android.util.Log;
 
-public class TOCParser {
+
+public class DocumentTOCReader {
 	
 	public static final String ENTRIES = "Entries";
 	public static final String ITEM = "item";
@@ -22,28 +17,16 @@ public class TOCParser {
 	public static final String SRC = "src";
 	
 	
-	private Document doc;
-	
-	TOCParser(Document doc){
-		this.doc = doc;
-	}
-	
-	
-	public TOC parse(){
+	static public TOC read(Resource packageResource){
 		
 		TOC toc = null;
-    	File file = new File(doc.getPedPath());
-    	
-    	ZipFile zip = null;
     	try{
-    		zip = new ZipFile(file);
     		
     		XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
     		factory.setNamespaceAware(true);
     		XmlPullParser parser = factory.newPullParser();
-    		ZipEntry entry = zip.getEntry(doc.getContainerPath());
-            InputStream inp1 = zip.getInputStream(entry);
-            parser.setInput(inp1, null);
+
+            parser.setInput(packageResource.getInputStream(), null);
     		int type = parser.getEventType();
     		
     		TOCEntry currentItem = null;
@@ -83,7 +66,7 @@ public class TOCParser {
                 type = parser.next();
     		}
     	}catch (Exception ex) {
-            Log.e("TOCParser", "Exception parsing toc", ex);
+            //Log.e("TOCParser", "Exception parsing toc", ex);
         }
 		
 		return toc;

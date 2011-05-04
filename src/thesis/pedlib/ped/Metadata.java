@@ -15,7 +15,11 @@ public class Metadata {
 	private List<String> authors;
 	private List<QName> otherMeta;
 	
-	Metadata(String title,String language, String description, String subject, String date, List<String> authors, List<QName> otherMeta){
+	public Metadata(){
+		this(null,null);
+	}
+	
+	public Metadata(String title,String language, String description, String subject, String date, List<String> authors, List<QName> otherMeta){
 		this.title = title;
 		this.language = language;
 		this.description = description;
@@ -25,71 +29,71 @@ public class Metadata {
 		this.otherMeta = otherMeta;
 	}
 	
-	Metadata(String title,String language){
+	public Metadata(String title,String language){
 		this.title = title;
 		this.language = language;
 		this.authors = new ArrayList<String>();
 		this.otherMeta = new ArrayList<QName>();
 	}
 	
-	String getTitle(){
+	public String getTitle(){
 		return title;
 	}
 	
-	void setTitle(String title){
+	public void setTitle(String title){
 		this.title = title;
 	}
 	
-	String getLanguage(){
+	public String getLanguage(){
 		return language;
 	}
 	
-	void setLanguage(String language){
+	public void setLanguage(String language){
 		this.language = language;
 	}
 	
-	String getSubject(){
+	public String getSubject(){
 		return subject;
 	}
 	
-	void setSubject(String subject){
+	public void setSubject(String subject){
 		this.subject = subject;
 	}
 	
-	String getDescription(){
+	public String getDescription(){
 		return description;
 	}
 	
-	void setDescription(String description){
+	public void setDescription(String description){
 		this.description = description;
 	}
 	
-	String getDate(){
+	public String getDate(){
 		return date;
 	}
 	
-	void setDate(String date){
+	public void setDate(String date){
 		this.date = date;
 	}
 	
-	List<String> getAuthors(){
+	public List<String> getAuthors(){
 		return authors;
 	}
 	
-	List<QName> getOtherMeta(){
+	public List<QName> getOtherMeta(){
 		return otherMeta;
 	}
 	
-	void addAuthor(String name){
+	public void addAuthor(String name){
 		authors.add(name);
 	}
 	
-	void addOtherMeta(String name, String value){
+	public void addOtherMeta(String name, String value){
 		QName meta = new QName(name,value);
 		otherMeta.add(meta);
 	}
 	
-	void addOtherMeta(QName metadata){
+	public void addOtherMeta(QName metadata){
 		otherMeta.add(metadata);
 	}
 
