@@ -6,6 +6,8 @@ import java.util.List;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import android.util.Log;
+
 
 public class DocumentMetadataReader {
 	
@@ -34,14 +36,8 @@ public class DocumentMetadataReader {
     		int type;
     		String name = "";
     		boolean valid = false;
-    		while ((type = parser.next()) != XmlPullParser.END_DOCUMENT) {
-    			//pass the meta close tag
-    			if (type == XmlPullParser.END_TAG) {
-                    name = parser.getName();
-                    if ("metadata".equalsIgnoreCase(name)) {
-                        break;
-                    }
-                }
+    		boolean done = false;
+    		while ((type = parser.next()) != XmlPullParser.END_DOCUMENT && !done) {
     			
     			if (type == XmlPullParser.START_TAG) {
     				name = parser.getName();
@@ -50,8 +46,8 @@ public class DocumentMetadataReader {
                     } else {
                         valid = false;
                     }
-                    
-                    if (type == XmlPullParser.TEXT && valid) {
+    			}
+                    else if (type == XmlPullParser.TEXT && valid) {
                         String text = parser.getText();
                         if (name.equals(TITLE)) {
                             meta.setTitle(text);
@@ -73,10 +69,14 @@ public class DocumentMetadataReader {
                         }
                         valid = false;
                     }
+    			else if(type == XmlPullParser.END_TAG){
+    				if(parser.getName().equalsIgnoreCase("metadata"))
+    					done = true;
     			}
     		}
+    		
     	}catch (Exception ex) {
-            //Log.e("MetadataReader", "Exception parsing metadata", ex);
+            Log.e("MetadataReader Exception parsing metadata", ex.getMessage());
         }
 		
 		return meta;

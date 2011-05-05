@@ -52,6 +52,7 @@ public class ResourceUtil {
 	 * @throws IOException
 	 */
 	public static Resource createResource(ZipEntry zipEntry, ZipInputStream zipInputStream) throws IOException {
+		
 		return new Resource(zipInputStream, zipEntry.getName());
 
 	}

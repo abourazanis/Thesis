@@ -69,7 +69,8 @@ public class DocumentReader {
 		for (Resource resource : resourcesByHref.values()) {
 			String href = resource.getHref();
 			if ((href != null && href != "") || href.length() > lastSlashPos) {
-				resource.setHref(href.substring(lastSlashPos + 1));
+				href = href.substring(lastSlashPos + 1);
+				resource.setHref(href);
 			}
 			result.put(href, resource);
 		}
@@ -94,7 +95,8 @@ public class DocumentReader {
 			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 			factory.setNamespaceAware(true);
 			XmlPullParser parser = factory.newPullParser();
-			parser.setInput(packageResource.getInputStream(), null);
+			//parser.setInput(packageResource.getInputStream(), "UTF-8");
+			parser.setInput(packageResource.getReader());
 
 			int type = parser.next();
 			String name, id, href, mediaTypeName;
@@ -114,7 +116,7 @@ public class DocumentReader {
 						try {
 							href = URLDecoder.decode(href, "UTF-8");
 						} catch (UnsupportedEncodingException e) {
-							// log.error(e.getMessage());
+							Log.e("UnsupportedEncodingException", e.getMessage());
 						}
 					}
 					break;
@@ -130,12 +132,14 @@ public class DocumentReader {
 						result.add(resource);
 						idMapping.put(id, resource.getId());
 					}
+					if(parser.getName().equalsIgnoreCase("manifest"))
+						done = true;
 					break;
 				}
 				type = parser.next();
 			}
 		} catch (Exception ex) {
-			Log.e("TOCParser", "Exception parsing toc", ex);
+			Log.e("Exception parsing manifest", ex.getMessage());
 		}
 
 		return result;
@@ -195,7 +199,7 @@ public class DocumentReader {
 		for (String coverHref: coverHrefs) {
 			Resource resource = doc.getResources().getByHref(coverHref);
 			if (resource == null) {
-				//log.error("Cover resource " + coverHref + " not found");
+				//Log.e("Cover resource " + coverHref + " not found");
 				continue;
 			}
 			if (resource.getMediaType() == MediaTypeService.XHTML) {

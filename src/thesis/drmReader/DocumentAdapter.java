@@ -1,7 +1,7 @@
 package thesis.drmReader;
 import java.util.ArrayList;
 
-import thesis.drmReader.R;
+import thesis.pedlib.ped.Document;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -56,7 +56,7 @@ public class DocumentAdapter extends ArrayAdapter<Document>{
 		Document doc = documents.get(position);
 		if(doc != null){
 			//holder.imageView.setImageURI(uri);
-			holder.textViewBottom.setText(doc.getDocumentDetails());
+			holder.textViewBottom.setText(doc.getDocumentDescription());
 			holder.textViewTop.setText(doc.getDocumentTitle());
 		}
 		

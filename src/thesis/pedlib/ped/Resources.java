@@ -259,7 +259,6 @@ public class Resources {
 		if (href == "" || href == null) {
 			return null;
 		}
-		href = href.substring(0,href.indexOf("#"));
 		Resource result = resources.get(href);
 		return result;
 	}

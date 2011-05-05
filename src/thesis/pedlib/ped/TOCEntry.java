@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
 public class TOCEntry implements Comparable<TOCEntry> {
 	private Resource resource;
 	private int order;
 	private List<TOCEntry> childs;
 	
 	TOCEntry(String id, int order){
-		this(id,order,null,null);
+		this(id,order,null,new ArrayList<TOCEntry>());
 	}
 	
 	TOCEntry(int order,String src, String label){
@@ -19,6 +20,12 @@ public class TOCEntry implements Comparable<TOCEntry> {
 
 	TOCEntry(String id,int order,String src, String label){
 		this(id,order,src,label,new ArrayList<TOCEntry>());
+	}
+	
+	TOCEntry(String id,int order, String label,ArrayList<TOCEntry> childs){
+		this.resource = new Resource(id, label);
+		this.order = order;
+		this.childs = childs;
 	}
 	
 	TOCEntry(String id,int order,String src, String label,ArrayList<TOCEntry> childs){

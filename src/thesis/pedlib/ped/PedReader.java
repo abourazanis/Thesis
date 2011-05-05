@@ -9,6 +9,8 @@ import java.util.zip.ZipInputStream;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import android.util.Log;
+
 import thesis.pedlib.util.ResourceUtil;
 
 public class PedReader {
@@ -59,10 +61,11 @@ public class PedReader {
 			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 			factory.setNamespaceAware(true);
 			XmlPullParser parser = factory.newPullParser();
-			parser.setInput(containerResource.getInputStream(), null);
-
-			int type;
-			while ((type = parser.next()) != XmlPullParser.END_DOCUMENT) {
+			//parser.setInput(containerResource.getInputStream(), "UTF-8");
+			parser.setInput(containerResource.getReader());
+			
+			int type = parser.next();
+			while (type != XmlPullParser.END_DOCUMENT) {
 				if (type == XmlPullParser.START_TAG) {
 					String name = parser.getName();
 					if ("rootfile".equalsIgnoreCase(name)) {
@@ -74,9 +77,10 @@ public class PedReader {
 						break;
 					}
 				}
+				type = parser.next();
 			}
 		} catch (Exception e) {
-			// logging
+			Log.e("PedReader getPackageResourceHref", e.getMessage());
 		}
 
 		return result;

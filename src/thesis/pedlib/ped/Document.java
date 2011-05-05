@@ -10,6 +10,10 @@ public class Document {
 	private Resource docResource;
 	
 	
+	//TODO:
+	//remove all pedPath relevant code
+	//maybe and the containerPath
+	
 	public Document(){
 	}
 	
@@ -20,6 +24,10 @@ public class Document {
 	public String getPedPath(){
 		return pedPath;
 	}
+	
+	public void setPedPath(String path){
+		pedPath = path;
+	}
 
 	public void setMetadata(Metadata metadata){
 		this.metaData = metadata;
@@ -27,6 +35,10 @@ public class Document {
 	
 	public String getDocumentTitle(){
 		return this.metaData.getTitle();
+	}
+	
+	public String getDocumentDescription(){
+		return this.metaData.getDescription();
 	}
 	
 	public String getContainerPath(){

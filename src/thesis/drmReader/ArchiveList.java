@@ -1,85 +1,101 @@
 package thesis.drmReader;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.zip.ZipInputStream;
 
+import thesis.pedlib.ped.Document;
+import thesis.pedlib.ped.PedReader;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.View;
+import android.widget.ListView;
 
 public class ArchiveList extends ListActivity {
-	
+
 	private ArrayList<Document> docList;
 	private DocumentAdapter docAdapter;
 	private ProgressDialog progressDialog;
+	private PedReader reader;
 	private Runnable viewDocuments;
-	
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState){
+
+	/** Called when the activity is first created. */
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.doclist);
-		
+
+		reader = new PedReader();
 		docList = new ArrayList<Document>();
-		docAdapter = new DocumentAdapter(this,R.layout.list_item, docList);
+		docAdapter = new DocumentAdapter(this, R.layout.list_item, docList);
 		setListAdapter(docAdapter);
-		
-		viewDocuments = new Runnable(){
+
+		viewDocuments = new Runnable() {
 			@Override
-			public void run(){
+			public void run() {
 				getDocuments();
 			}
 		};
-		
+
 		Thread thread = new Thread(null, viewDocuments, "ViewDocuments");
 		thread.start();
-		progressDialog = ProgressDialog.show(ArchiveList.this, "Please wait...", "Retrieving data..", true);
+		progressDialog = ProgressDialog.show(ArchiveList.this,
+				"Please wait...", "Retrieving data..", true);
 	}
-    
-    private void getDocuments(){
-    	
-    		File sdDir = Environment.getExternalStorageDirectory();
-    		if(sdDir.exists() && sdDir.canRead()){
-    			File docDir = new File(sdDir.getAbsolutePath() + "/drmReader");
-    			if(docDir.exists() && docDir.canRead()){
-    				//String[] docList = docDir.list();
-    				
-    				//TODO:based on the list of documents,
-    				// generate the relevant Document classes - maybe implement it in the library
-    				// and add them in the docList
-    				
-    			}
-    		}
-    	
-    	
-    	try{
-    		docList = new ArrayList<Document>();
-    		Document doc = new Document("First Document","Sample Pic","Doc Details");
-    		Document doc2 = new Document("Second  Document","Sample Pic2222","Doc Details222");
-    		Document doc3 = new Document("Third  Document","Sample Pic3333","Doc Details333");
-    		
-    		docList.add(doc);
-    		docList.add(doc2);
-    		docList.add(doc3);
-    	}catch (Exception e) { 
-            Log.e("BACKGROUND_PROC", e.getMessage());
-         }
-    	runOnUiThread(returnResults);
-    }
-    
-    private Runnable returnResults = new Runnable() {
 
-        @Override
-        public void run() {
-            if(docList != null && docList.size() > 0){
-                docAdapter.notifyDataSetChanged();
-                for(int i=0;i<docList.size();i++)
-                docAdapter.add(docList.get(i));
-            }
-            progressDialog.dismiss();
-            docAdapter.notifyDataSetChanged();
-        }
-      };
+	@Override
+	public void onListItemClick(ListView l, View v, int position, long id) {
+		super.onListItemClick(l, v, position, id);
+		Document doc = (Document) this.getListAdapter().getItem(position);
+		Intent intent = new Intent(this, ReaderView.class);
+		intent.putExtra("docSrc", doc.getPedPath());
+
+		startActivity(intent);
+	}
+
+	private void getDocuments() {
+
+		File sdDir = Environment.getExternalStorageDirectory();
+		if (sdDir.exists() && sdDir.canRead()) {
+			// File docDir = new File(sdDir.getAbsolutePath() + "/drmReader");
+			File docDir = new File(sdDir.getAbsolutePath());
+			if (docDir.exists() && docDir.canRead()) {
+				docList = new ArrayList<Document>();
+				String[] fileList = docDir.list();
+				for (String filename : fileList) {
+					if (filename.endsWith(".ped"))
+						try {
+							ZipInputStream ped = new ZipInputStream(
+									new FileInputStream(sdDir.getAbsolutePath() + "/" + filename));
+							Document doc = reader.readPed(ped, "UTF-8");
+							// TODO:remove
+							doc.setPedPath(sdDir.getAbsolutePath() + "/" + filename);
+							docList.add(doc);
+						} catch (Exception e) {
+							Log.e("List init", e.getMessage());
+						}
+				}
+			}
+		}
+		runOnUiThread(returnResults);
+	}
+
+	private Runnable returnResults = new Runnable() {
+
+		@Override
+		public void run() {
+			if (docList != null && docList.size() > 0) {
+				docAdapter.notifyDataSetChanged();
+				for (int i = 0; i < docList.size(); i++)
+					docAdapter.add(docList.get(i));
+			}
+			progressDialog.dismiss();
+			docAdapter.notifyDataSetChanged();
+		}
+	};
 }
