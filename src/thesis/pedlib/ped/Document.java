@@ -73,5 +73,19 @@ public class Document {
 	public void setDocResource(Resource docResource) {
 		this.docResource = docResource;
 	}
+	
+	public Resource getCoverImage() {
+		return metaData.getCoverImage();
+	}
+
+	public void setCoverImage(Resource coverImage) {
+		if (coverImage == null) {
+			return;
+		}
+		if (! resources.containsByHref(coverImage.getHref())) {
+			resources.add(coverImage);
+		}
+		metaData.setCoverImage(coverImage);
+	}
 
 }

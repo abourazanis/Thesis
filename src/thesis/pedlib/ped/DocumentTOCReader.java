@@ -13,7 +13,7 @@ public class DocumentTOCReader {
 	public static final String CONTENT = "content";
 
 	public static final String ID = "id";
-	public static final String ORDER = "playOrder";
+	public static final String ORDER = "order";
 	public static final String SRC = "src";
 
 	static public TOC read(Resource packageResource) {

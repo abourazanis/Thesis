@@ -14,6 +14,7 @@ public class Metadata {
 	private String date;
 	private List<String> authors;
 	private List<QName> otherMeta;
+	private Resource coverImage;
 	
 	public Metadata(){
 		this(null,null);
@@ -95,6 +96,13 @@ public class Metadata {
 	
 	public void addOtherMeta(QName metadata){
 		otherMeta.add(metadata);
+	}
+		
+	public Resource getCoverImage() {
+		return coverImage;
+	}
+	public void setCoverImage(Resource coverImage) {
+		this.coverImage = coverImage;
 	}
 
 }

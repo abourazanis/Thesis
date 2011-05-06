@@ -1,9 +1,7 @@
 package thesis.drmReader;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.ArrayList;
-import java.util.zip.ZipInputStream;
 
 import thesis.pedlib.ped.Document;
 import thesis.pedlib.ped.PedReader;
@@ -12,7 +10,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 
@@ -68,17 +65,15 @@ public class ArchiveList extends ListActivity {
 				docList = new ArrayList<Document>();
 				String[] fileList = docDir.list();
 				for (String filename : fileList) {
-					if (filename.endsWith(".ped"))
-						try {
-							ZipInputStream ped = new ZipInputStream(
-									new FileInputStream(sdDir.getAbsolutePath() + "/" + filename));
-							Document doc = reader.readPed(ped, "UTF-8");
-							// TODO:remove
-							doc.setPedPath(sdDir.getAbsolutePath() + "/" + filename);
-							docList.add(doc);
-						} catch (Exception e) {
-							Log.e("List init", e.getMessage());
-						}
+					if (filename.endsWith(".ped")) {
+						String pedFilePath = sdDir.getAbsolutePath() + "/"
+								+ filename;
+						Document doc = reader.getPedPreview(pedFilePath,
+								"UTF-8");
+						// TODO:remove
+						doc.setPedPath(pedFilePath);
+						docList.add(doc);
+					}
 				}
 			}
 		}

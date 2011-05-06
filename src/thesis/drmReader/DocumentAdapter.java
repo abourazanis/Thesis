@@ -1,8 +1,11 @@
 package thesis.drmReader;
+import java.io.BufferedInputStream;
 import java.util.ArrayList;
 
 import thesis.pedlib.ped.Document;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -55,7 +58,14 @@ public class DocumentAdapter extends ArrayAdapter<Document>{
 		
 		Document doc = documents.get(position);
 		if(doc != null){
-			//holder.imageView.setImageURI(uri);
+			try{
+			BufferedInputStream buf = new BufferedInputStream(doc.getCoverImage().getInputStream());
+            Bitmap bm = BitmapFactory.decodeStream(buf);
+			holder.imageView.setImageBitmap(bm);
+			buf.close();
+			}catch(Exception e){
+				//
+			}
 			holder.textViewBottom.setText(doc.getDocumentDescription());
 			holder.textViewTop.setText(doc.getDocumentTitle());
 		}

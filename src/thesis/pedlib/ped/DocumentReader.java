@@ -1,5 +1,6 @@
 package thesis.pedlib.ped;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Collection;
@@ -13,6 +14,7 @@ import org.xmlpull.v1.XmlPullParserFactory;
 
 import thesis.pedlib.util.MediaType;
 import thesis.pedlib.util.MediaTypeService;
+import thesis.pedlib.util.ResourceUtil;
 import android.util.Log;
 
 public class DocumentReader {
@@ -23,7 +25,7 @@ public class DocumentReader {
 	private static final String MEDIATYPE = "media-type";
 
 	public static void read(Resource packageResource, Document doc,
-			Map<String, Resource> resourcesByHref){
+			Map<String, Resource> resourcesByHref) {
 		String packageHref = packageResource.getHref();
 		resourcesByHref = fixHrefs(packageHref, resourcesByHref);
 
@@ -34,19 +36,16 @@ public class DocumentReader {
 		Resources resources = readManifest(packageResource, resourcesByHref,
 				idMapping);
 		doc.setResources(resources);
-		readCover(packageResource, doc);//TODO:implement it
+		readCover(packageResource, doc);
 		doc.setMetadata(DocumentMetadataReader.read(packageResource));
 		doc.setTOC(DocumentTOCReader.read(packageResource));
 
-		// if we did not find a cover page then we make the first page of the
-		// book the cover page
-		
-		//TODO:IMPLEMENT IT
-		/*
-		if (doc.getCoverPage() == null && doc.getSpine().size() > 0) {
-			doc.setCoverPage(doc.getSpine().getResource(0));
-		}
-		*/
+	}
+
+	public static void getPreview(Resource packageResource, Document doc, String pedFilePath) {
+
+		readCover(packageResource, doc, pedFilePath);
+		doc.setMetadata(DocumentMetadataReader.read(packageResource));
 	}
 
 	/**
@@ -95,7 +94,7 @@ public class DocumentReader {
 			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 			factory.setNamespaceAware(true);
 			XmlPullParser parser = factory.newPullParser();
-			//parser.setInput(packageResource.getInputStream(), "UTF-8");
+			// parser.setInput(packageResource.getInputStream(), "UTF-8");
 			parser.setInput(packageResource.getReader());
 
 			int type = parser.next();
@@ -116,7 +115,8 @@ public class DocumentReader {
 						try {
 							href = URLDecoder.decode(href, "UTF-8");
 						} catch (UnsupportedEncodingException e) {
-							Log.e("UnsupportedEncodingException", e.getMessage());
+							Log.e("UnsupportedEncodingException",
+									e.getMessage());
 						}
 					}
 					break;
@@ -132,7 +132,7 @@ public class DocumentReader {
 						result.add(resource);
 						idMapping.put(id, resource.getId());
 					}
-					if(parser.getName().equalsIgnoreCase("manifest"))
+					if (parser.getName().equalsIgnoreCase("manifest"))
 						done = true;
 					break;
 				}
@@ -144,68 +144,99 @@ public class DocumentReader {
 
 		return result;
 	}
-	
+
 	/**
-	 * Find all resources that have something to do with the coverpage and the cover image.
-	 * Search the meta tags and the guide references
+	 * Find all resources that have something to do with the cover image. Search
+	 * the meta tags
 	 * 
-	 * @param packageDocument
+	 * @param packageResource
 	 * @return
 	 */
-	// package
 	static Set<String> findCoverHrefs(Resource packageResource) {
-		
-		Set<String> result = new HashSet<String>();
-		/*******************
-		
-		// try and find a meta tag with name = 'cover' and a non-blank id
-		String coverResourceId = DOMUtil.getFindAttributeValue(packageDocument, NAMESPACE_OPF,
-											OPFTags.meta, OPFAttributes.name, OPFValues.meta_cover,
-											OPFAttributes.content);
 
-		if (StringUtils.isNotBlank(coverResourceId)) {
-			String coverHref = DOMUtil.getFindAttributeValue(packageDocument, NAMESPACE_OPF,
-					OPFTags.item, OPFAttributes.id, coverResourceId,
-					OPFAttributes.href);
-			if (StringUtils.isNotBlank(coverHref)) {
-				result.add(coverHref);
-			} else {
-				result.add(coverResourceId); // maybe there was a cover href put in the cover id attribute
+		Set<String> result = new HashSet<String>();
+
+		// try and find a meta tag with name = 'cover' and a non-blank id
+		try {
+			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+			factory.setNamespaceAware(true);
+			XmlPullParser parser = factory.newPullParser();
+			parser.setInput(packageResource.getReader());
+
+			int type;
+			String name = "";
+			boolean done = false;
+			boolean valid = false;
+			while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
+					&& !done) {
+
+				if (type == XmlPullParser.START_TAG) {
+					name = parser.getName();
+					if (name.equals("cover")) {
+						valid = true;
+					} else {
+						valid = false;
+					}
+				} else if (type == XmlPullParser.TEXT && valid) {
+					String text = parser.getText();
+					if (name.equals("cover")) {
+						result.add(text);
+					}
+					valid = false;
+				} else if (type == XmlPullParser.END_TAG) {
+					if (parser.getName().equalsIgnoreCase("metadata"))
+						done = true;
+				}
 			}
+
+		} catch (Exception ex) {
+			Log.e("DocumentReader Exception parsing cover", ex.getMessage());
 		}
-		// try and find a reference tag with type is 'cover' and reference is not blank
-		String coverHref = DOMUtil.getFindAttributeValue(packageDocument, NAMESPACE_OPF,
-											OPFTags.reference, OPFAttributes.type, OPFValues.reference_cover,
-											OPFAttributes.href);
-		if (StringUtils.isNotBlank(coverHref)) {
-			result.add(coverHref);
-		}
-		
-		****************************/
+
 		return result;
 	}
-	
+
 	/**
-	 * Finds the cover resource in the packageDocument and adds it to the book if found.
-	 * Keeps the cover resource in the resources map
+	 * Finds the cover resource in the packageResource and adds it to the doc
+	 * if found. Keeps the cover resource in the resources map
+	 * 
 	 * @param packageResource
-	 * @param document
-	 * @param resources
+	 * @param doc
+	 * @param pedFilePath
 	 * @return
 	 */
+	private static void readCover(Resource packageResource, Document doc,
+			String pedFilePath) {
+
+		Collection<String> coverHrefs = findCoverHrefs(packageResource);
+		for (String coverHref : coverHrefs) {
+			Resource resource = null;
+			try {
+				resource = ResourceUtil.getResourceFromPed(pedFilePath, "DOC/"
+						+ coverHref);
+			} catch (IOException e) {
+				Log.e("readCover", e.getMessage());
+			}
+			if (resource == null) {
+				continue;
+			}
+
+			if (MediaTypeService.isBitmapImage(resource.getMediaType())) {
+				doc.setCoverImage(resource);
+			}
+		}
+	}
+	
 	private static void readCover(Resource packageResource, Document doc) {
 		
 		Collection<String> coverHrefs = findCoverHrefs(packageResource);
 		for (String coverHref: coverHrefs) {
 			Resource resource = doc.getResources().getByHref(coverHref);
 			if (resource == null) {
-				//Log.e("Cover resource " + coverHref + " not found");
 				continue;
 			}
-			if (resource.getMediaType() == MediaTypeService.XHTML) {
-				//doc.setCoverPage(resource);
-			} else if (MediaTypeService.isBitmapImage(resource.getMediaType())) {
-				//doc.setCoverImage(resource);
+			if (MediaTypeService.isBitmapImage(resource.getMediaType())) {
+				doc.setCoverImage(resource);
 			}
 		}
 	}

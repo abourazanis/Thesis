@@ -1,6 +1,7 @@
 package thesis.pedlib.ped;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -9,9 +10,9 @@ import java.util.zip.ZipInputStream;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import thesis.pedlib.util.ResourceUtil;
 import android.util.Log;
 
-import thesis.pedlib.util.ResourceUtil;
 
 public class PedReader {
 
@@ -23,6 +24,16 @@ public class PedReader {
 		String packageResourceHref = getPackageResourceHref(result, resources);
 		Resource packageResource = processPackageResource(packageResourceHref,
 				result, resources);
+		result.setDocResource(packageResource);
+
+		return result;
+	}
+
+	public Document getPedPreview(String pedFilePath, String encoding) {
+		Document result = new Document();
+		String packageResourceHref = getPackageResourceHref(pedFilePath);
+		Resource packageResource = processPackageResource(packageResourceHref,pedFilePath,
+				result);
 		result.setDocResource(packageResource);
 
 		return result;
@@ -57,13 +68,43 @@ public class PedReader {
 		}
 
 		try {
+			result = getPackageHref(containerResource.getReader());
+		} catch (IOException e) {
+			Log.e("reader", e.getMessage());
+		}
+
+		return result;
+	}
+
+	private String getPackageResourceHref(String pedFilePath) {
+
+		String defaultResult = "DOC/document.xml";
+		String result = defaultResult;
+
+		try {
+			Resource resource = ResourceUtil.getResourceFromPed(pedFilePath,"META-INF/container.xml");
+			if(resource == null){
+				return result;
+			}
+			result = getPackageHref(resource.getReader());
+		} catch (IOException e) {
+			Log.e("reader", e.getMessage());
+		}
+
+		return result;
+	}
+
+	private String getPackageHref(Reader reader) {
+		String defaultResult = "DOC/document.xml";
+		String result = defaultResult;
+
+		try {
 
 			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 			factory.setNamespaceAware(true);
 			XmlPullParser parser = factory.newPullParser();
-			//parser.setInput(containerResource.getInputStream(), "UTF-8");
-			parser.setInput(containerResource.getReader());
-			
+			parser.setInput(reader);
+
 			int type = parser.next();
 			while (type != XmlPullParser.END_DOCUMENT) {
 				if (type == XmlPullParser.START_TAG) {
@@ -85,10 +126,25 @@ public class PedReader {
 
 		return result;
 	}
-	
-	private Resource processPackageResource(String packageResourceHref, Document doc, Map<String, Resource> resources) {
+
+	private Resource processPackageResource(String packageResourceHref,
+			Document doc, Map<String, Resource> resources) {
 		Resource packageResource = resources.remove(packageResourceHref);
 		DocumentReader.read(packageResource, doc, resources);
+
+		return packageResource;
+	}
+
+	private Resource processPackageResource(String packageResourceHref,String pedFilePath,
+			Document doc) {
+		Resource packageResource = null;
+		try{
+		packageResource = ResourceUtil.getResourceFromPed(pedFilePath,packageResourceHref);
+		DocumentReader.getPreview(packageResource, doc, pedFilePath);
+
+		}catch(Exception e){
+			Log.e("processPackageResource",e.getMessage());
+		}
 		
 		return packageResource;
 	}
