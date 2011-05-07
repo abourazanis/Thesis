@@ -36,16 +36,16 @@ public class DocumentReader {
 		Resources resources = readManifest(packageResource, resourcesByHref,
 				idMapping);
 		doc.setResources(resources);
-		readCover(packageResource, doc);
 		doc.setMetadata(DocumentMetadataReader.read(packageResource));
+		readCover(packageResource, doc);
 		doc.setTOC(DocumentTOCReader.read(packageResource));
 
 	}
 
 	public static void getPreview(Resource packageResource, Document doc, String pedFilePath) {
 
-		readCover(packageResource, doc, pedFilePath);
 		doc.setMetadata(DocumentMetadataReader.read(packageResource));
+		readCover(packageResource, doc, pedFilePath);
 	}
 
 	/**

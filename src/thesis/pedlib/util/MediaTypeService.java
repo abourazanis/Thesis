@@ -6,6 +6,7 @@ import java.util.Map;
 public class MediaTypeService {
 	
 	public static final MediaType XHTML = new MediaType("application/xhtml+xml", ".xhtml", new String[] {".htm", ".html", ".xhtml"});
+	public static final MediaType XML = new MediaType("application/xml", ".xml");
 	public static final MediaType PED = new MediaType("application/ped+zip", ".ped");
 	public static final MediaType JPG = new MediaType("image/jpeg", ".jpg", new String[] {".jpg", ".jpeg"});
 	public static final MediaType PNG = new MediaType("image/png", ".png");
@@ -16,7 +17,7 @@ public class MediaTypeService {
 	public static final MediaType OPENTYPE = new MediaType("font/opentype", ".otf");
 	
 	public static MediaType[] mediatypes = new MediaType[] {
-		XHTML, PED, JPG, PNG, GIF, CSS, SVG, TTF, OPENTYPE
+		XHTML, XML, PED, JPG, PNG, GIF, CSS, SVG, TTF, OPENTYPE
 	};
 	
 	public static Map<String, MediaType> mediaTypesByName = new HashMap<String, MediaType>();
@@ -41,7 +42,7 @@ public class MediaTypeService {
 		for(int i = 0; i < mediatypes.length; i++) {
 			MediaType mediatype = mediatypes[i];
 			for(String extension: mediatype.getExtensions()) {
-				if(filename.compareToIgnoreCase(extension) == 0){
+				if(filename.toLowerCase().endsWith(extension)){
 					return mediatype;
 				}
 			}

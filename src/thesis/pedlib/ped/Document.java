@@ -82,9 +82,12 @@ public class Document {
 		if (coverImage == null) {
 			return;
 		}
-		if (! resources.containsByHref(coverImage.getHref())) {
-			resources.add(coverImage);
+		if (resources != null){
+			if(! resources.containsByHref(coverImage.getHref())) {
+				resources.add(coverImage);
+			}
 		}
+			
 		metaData.setCoverImage(coverImage);
 	}
 

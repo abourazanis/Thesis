@@ -197,7 +197,7 @@ public class Resources {
 		if (href == "" || href == null) {
 			return false;
 		}
-		return resources.containsKey(href.substring(0,href.indexOf("#")));
+		return resources.containsKey(href);
 	}
 	
 	/**
