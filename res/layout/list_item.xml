@@ -5,9 +5,10 @@
     android:padding="6dip">
     <ImageView
         android:id="@+id/icon"
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
+        android:layout_width="50dip"
+        android:layout_height="70dip"
         android:layout_marginRight="6dip"
+        android:scaleType="fitXY"
          />
     <LinearLayout
         android:orientation="vertical"
@@ -19,6 +20,7 @@
             android:layout_width="fill_parent"
             android:layout_height="0dip"
             android:layout_weight="1"
+            android:textStyle="bold"
             android:gravity="center_vertical"
         />
         <TextView

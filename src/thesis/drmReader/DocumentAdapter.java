@@ -7,7 +7,6 @@ import thesis.pedlib.ped.Document;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -68,7 +67,7 @@ public class DocumentAdapter extends ArrayAdapter<Document> {
 				BufferedInputStream buf = new BufferedInputStream(doc
 						.getCoverImage().getInputStream());
 				Bitmap bm = BitmapFactory.decodeStream(buf);
-				
+				/*
 				int width = bm.getWidth();
 				int height = bm.getHeight();
 				int newWidth = 30;
@@ -84,10 +83,16 @@ public class DocumentAdapter extends ArrayAdapter<Document> {
 
 				// make a Drawable from Bitmap to allow to set the BitMap
 				// to the ImageView, ImageButton or what ever
-				BitmapDrawable bmd = new BitmapDrawable(resizedBitmap);
+				 BitmapDrawable bmd = new BitmapDrawable(resizedBitmap);
+				 * 
+				 */
+				BitmapDrawable bmd = new BitmapDrawable(bm);
+				
 				
 				holder.imageView.setImageDrawable(bmd);
-				buf.close();
+				if (buf != null) {
+		         	buf.close();
+		            }
 			} catch (Exception e) {
 				//
 			}

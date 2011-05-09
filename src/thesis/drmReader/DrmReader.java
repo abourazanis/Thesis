@@ -22,7 +22,7 @@ public class DrmReader extends TabActivity {
 	    intent = new Intent().setClass(this, ArchiveList.class);
 	    // Initialize a TabSpec for each tab and add it to the TabHost
 	    spec = tabHost.newTabSpec("archive").setIndicator("Archive",
-	                      res.getDrawable(R.drawable.icon))
+	                      res.getDrawable(R.drawable.ic_tab_archive))
 	                  .setContent(intent);
 	    tabHost.addTab(spec);
 	    
@@ -30,8 +30,8 @@ public class DrmReader extends TabActivity {
 	    // Create an Intent to launch an Activity for the tab (to be reused)
 	    intent = new Intent().setClass(this, StoreList.class);
 	    // Initialize a TabSpec for each tab and add it to the TabHost
-	    spec = tabHost.newTabSpec("store").setIndicator("Store",
-	                      res.getDrawable(R.drawable.icon))
+	    spec = tabHost.newTabSpec("web").setIndicator("Web",
+	                      res.getDrawable(R.drawable.ic_tab_web))
 	                  .setContent(intent);
 	    tabHost.addTab(spec);
 	    
