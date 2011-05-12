@@ -3,4 +3,10 @@
     <string name="hello">Hello World, drmReader!</string>
     <string name="app_name">DrmReader</string>
     <string name="list_no_items">No documents to display</string>
+    <string name="read_item">Read</string>
+    <string name="delete_item">Delete</string>
+    <string name="toc">TOC</string>
+    <string name="home">document list</string>
+    <string name="font_size">font size</string>
+    <string name="tableOfContents">Table Of Contents</string>
 </resources>

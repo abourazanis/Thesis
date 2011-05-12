@@ -28,4 +28,13 @@ public class TOC {
 			items.add(item);
 		return items;
 	}
+	
+	public List<String> getItemTitles(){
+		List<String> titles = new ArrayList<String>();
+		for(TOCEntry entry:items){
+			titles.add(entry.getLabel());
+		}
+		return titles;
+	}
+	
 }
