@@ -12,14 +12,19 @@ public class SimpleGestureFilter extends SimpleOnGestureListener{
 	 public final static int SWIPE_LEFT  = 3;
 	 public final static int SWIPE_RIGHT = 4;
 	 
-	 public final static int MODE_TRANSPARENT = 0;
-	 public final static int MODE_SOLID       = 1;
-	 public final static int MODE_DYNAMIC     = 2;
+	 public final static int TAP_LEFT = 5;
+	 public final static int TAP_RIGHT = 6;
 	 
-	 private final static int ACTION_FAKE = -13; //just an unlikely number
-	 private int swipe_Min_Distance = 100;
+	 public final static int MODE_TRANSPARENT = 0; //all views receive Touch events
+	 public final static int MODE_SOLID       = 1; //no one will get events - only us
+	 public final static int MODE_DYNAMIC     = 2; //distinguish singletap and swipe - let all other pass
+	 
+
+
+	private final static int ACTION_FAKE = -13; //just an unlikely number
+	 private int swipe_Min_Distance = 80;
 	 private int swipe_Max_Distance = 350;
-	 private int swipe_Min_Velocity = 100;
+	 private int swipe_Min_Velocity = 50;
 	 
 	 private int mode      = MODE_DYNAMIC;
 	 private boolean running = true;
@@ -140,8 +145,12 @@ public class SimpleGestureFilter extends SimpleOnGestureListener{
 
 	 @Override
 	 public boolean onDoubleTap(MotionEvent arg0) {
-	  this.listener.onDoubleTap();;
-	  return true;
+		 if(this.mode == MODE_DYNAMIC){        // we owe an ACTION_UP, so we fake an       
+		     arg0.setAction(ACTION_FAKE);      //action which will be converted to an ACTION_UP later.                                    
+		     this.context.dispatchTouchEvent(arg0);  
+		  }   
+		     
+		  return false;
 	 }
 
 	 @Override
@@ -151,19 +160,15 @@ public class SimpleGestureFilter extends SimpleOnGestureListener{
 
 	 @Override
 	 public boolean onSingleTapConfirmed(MotionEvent arg0) {
+	  this.listener.onSingleTapConfirmed(arg0);
+	  return true;
 	  
-	  if(this.mode == MODE_DYNAMIC){        // we owe an ACTION_UP, so we fake an       
-	     arg0.setAction(ACTION_FAKE);      //action which will be converted to an ACTION_UP later.                                    
-	     this.context.dispatchTouchEvent(arg0);  
-	  }   
-	     
-	  return false;
 	 }
 	 
 	 
 	    static interface SimpleGestureListener{
 	     void onSwipe(int direction);
-	     void onDoubleTap();
+	     void onSingleTapConfirmed(MotionEvent e);
 	 }
 	 
 	}

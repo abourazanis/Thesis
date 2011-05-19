@@ -37,4 +37,8 @@ public class TOC {
 		return titles;
 	}
 	
+	public int size(){
+		return items.size();
+	}
+	
 }

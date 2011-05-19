@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+
+	<declare-styleable name="PageCurlView">
+
+		<attr name="enableDebugMode" format="boolean" />
+		<attr name="curlSpeed" format="integer" />
+		<attr name="updateRate" format="integer" />
+		<attr name="initialEdgeOffset" format="integer" />
+		<attr name="curlMode" format="integer" />
+
+	</declare-styleable>
+
+</resources>
