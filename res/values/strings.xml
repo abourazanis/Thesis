@@ -8,5 +8,6 @@
     <string name="toc">TOC</string>
     <string name="home">document list</string>
     <string name="font_size">font size</string>
+    <string name="font_size_msg">Set the Font Size</string>
     <string name="tableOfContents">Table Of Contents</string>
 </resources>

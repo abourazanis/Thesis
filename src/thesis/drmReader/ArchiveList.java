@@ -8,6 +8,7 @@ import thesis.pedlib.ped.PedReader;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -26,7 +27,6 @@ public class ArchiveList extends ListActivity {
 	private DocumentAdapter docAdapter;
 	private ProgressDialog progressDialog;
 	private PedReader reader;
-	private Runnable viewDocuments;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -40,17 +40,9 @@ public class ArchiveList extends ListActivity {
 		setListAdapter(docAdapter);
 		registerForContextMenu(getListView());
 
-		viewDocuments = new Runnable() {
-			@Override
-			public void run() {
-				getDocuments();
-			}
-		};
-
-		Thread thread = new Thread(null, viewDocuments, "ViewDocuments");
-		thread.start();
+		new ListDocumentsTask().execute((Void)null);
 		progressDialog = ProgressDialog.show(ArchiveList.this,
-				"Please wait...", "Retrieving data..", true);
+				"Please wait...", "Populating documents..", true);
 	}
 
 	@Override
@@ -94,45 +86,6 @@ public class ArchiveList extends ListActivity {
 		super.onListItemClick(l, v, position, id);
 		readDoc(position);
 	}
-
-	private void getDocuments() {
-
-		File sdDir = Environment.getExternalStorageDirectory();
-		if (sdDir.exists() && sdDir.canRead()) {
-			// File docDir = new File(sdDir.getAbsolutePath() + "/drmReader");
-			File docDir = new File(sdDir.getAbsolutePath());
-			if (docDir.exists() && docDir.canRead()) {
-				docList = new ArrayList<Document>();
-				String[] fileList = docDir.list();
-				for (String filename : fileList) {
-					if (filename.endsWith(".ped")) {
-						String pedFilePath = sdDir.getAbsolutePath() + "/"
-								+ filename;
-						Document doc = reader.getPedPreview(pedFilePath,
-								"UTF-8");
-						// TODO:remove
-						doc.setPedPath(pedFilePath);
-						docList.add(doc);
-					}
-				}
-			}
-		}
-		runOnUiThread(returnResults);
-	}
-
-	private Runnable returnResults = new Runnable() {
-
-		@Override
-		public void run() {
-			if (docList != null && docList.size() > 0) {
-				docAdapter.notifyDataSetChanged();
-				for (int i = 0; i < docList.size(); i++)
-					docAdapter.add(docList.get(i));
-			}
-			progressDialog.dismiss();
-			docAdapter.notifyDataSetChanged();
-		}
-	};
 	
 	private void readDoc(int position){
 		Document doc = (Document) this.getListAdapter().getItem(position);
@@ -144,6 +97,57 @@ public class ArchiveList extends ListActivity {
 	}
 	
 	private void deleteDoc(int position){
+		Document doc = (Document) this.getListAdapter().getItem(position);
+		docAdapter.remove(doc);
+		
+		File fileToRm = new File(doc.getPedPath());
+		if(fileToRm.exists())
+			fileToRm.delete();
+		
+		docAdapter.notifyDataSetChanged();
+	}
+	
+	private class ListDocumentsTask extends  AsyncTask<Void,Void,Void>{
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			File sdDir = Environment.getExternalStorageDirectory();
+			if (sdDir.exists() && sdDir.canRead()) {
+				// File docDir = new File(sdDir.getAbsolutePath() + "/drmReader");
+				File docDir = new File(sdDir.getAbsolutePath());
+				if (docDir.exists() && docDir.canRead()) {
+					docList = new ArrayList<Document>();
+					String[] fileList = docDir.list();
+					for (String filename : fileList) {
+						if (filename.endsWith(".ped")) {
+							String pedFilePath = sdDir.getAbsolutePath() + "/"
+									+ filename;
+							Document doc = reader.getPedPreview(pedFilePath,
+									"UTF-8");
+							// TODO:remove
+							doc.setPedPath(pedFilePath);
+							docList.add(doc);
+						}
+					}
+				}
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			
+			if (docList != null && docList.size() > 0) {
+				docAdapter.notifyDataSetChanged();
+				for (int i = 0; i < docList.size(); i++)
+					docAdapter.add(docList.get(i));
+			}
+			progressDialog.dismiss();
+			docAdapter.notifyDataSetChanged();
+			
+			super.onPostExecute(result);
+		}
 		
 	}
+	
 }

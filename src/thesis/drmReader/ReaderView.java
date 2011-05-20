@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.ZipInputStream;
 
+import thesis.drmReader.NumberPicker.OnChangedListener;
 import thesis.drmReader.SimpleGestureFilter.SimpleGestureListener;
 import thesis.pedlib.ped.Document;
 import thesis.pedlib.ped.PedReader;
@@ -15,7 +18,9 @@ import thesis.pedlib.ped.TOCEntry;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
@@ -25,21 +30,33 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public class ReaderView extends Activity implements SimpleGestureListener {
+public class ReaderView extends Activity implements SimpleGestureListener,
+		OnChangedListener {
 
 	private static final int TOC_MENU = 0;
+	private static final int FONT_SIZE_MENU = 1;
 	private static final String TAG = "ReaderView";
 	private static final int SCREEN_TAP_SIZE = 30;
+	private static final int SCREEN_PADDING = 0;
+	private static final int MAX_FONT_SIZE = 20;
 
 	private WebView webView;
+	private WebSettings webSettings;
 	private SimpleGestureFilter detector;
+	private ProgressDialog progressDialog;
 
 	private int displayWidth;
 	private int displayHeight;
+	private int columnWidth;
 	private int columnCount;
+
+	private ReentrantLock lock = new ReentrantLock();
+	private Condition condition = lock.newCondition();
+	private boolean isPageLoaded = false;
 
 	private Document currentDoc;
 	private int currentPageIndex = 0;
@@ -59,8 +76,8 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 			public boolean dispatchTouchEvent(MotionEvent ev) {
 				return false;
 			}
-
 		};
+
 		setContentView(webView);
 		detector = new SimpleGestureFilter(this, this);
 
@@ -68,6 +85,7 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 		displayWidth = display.getWidth();
 		displayHeight = display.getHeight();
 
+		webView.addJavascriptInterface(new JSInterface(), "interface");
 		webView.setWebViewClient(new WebViewClient() {
 			public void onPageFinished(WebView view, String url) {
 
@@ -76,35 +94,60 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 				columnCount = (view.getContentHeight() / view.getHeight()) + 1;
 				Log.e(TAG, "WwebView columns:" + columnCount
 						+ " ContentHeight:" + view.getContentHeight()
-						+ " Height:" + view.getHeight());
+						+ " Height:" + view.getHeight() + " Width:"
+						+ displayWidth);
 
-				// css3 column module
+				// css3 column module & webkit transition setup
 				String js = "var d = document.getElementsByTagName('body')[0];"
-						+ "d.style.WebkitColumnCount="
-						+ columnCount + ";"
-						+ "d.style.height='" + displayHeight + "px';"
+
+				+ "var rWidth = d.style.width;" + "d.style.width='"
+						+ (displayWidth - SCREEN_PADDING * 2)
+						+ "px';"
+						+ "var pageCount = Math.ceil(d.offsetHeight/"
+						+ displayHeight
+						+ ");"
+						+ "d.style.width=rWidth;"
+						+ "d.style.height='"
+						+ displayHeight
+						+ "px';"
+						+ "d.style['padding-left']='"
+						+ SCREEN_PADDING
+						+ "px';"
+						+ "d.style['padding-right']='"
+						+ SCREEN_PADDING
+						+ "px';"
 
 						+ "d.style['-webkit-transition-property'] = '-webkit-transform';"
 						+ "d.style['-webkit-transform-origin'] = \"0 0\";"
-						+ "d.style['-webkit-transition-duration'] = '550ms';"
-						+ "d.style['-webkit-transition-timing-function'] = 'ease-in-out';"
+						+ "d.style['-webkit-transition-duration'] = '700ms';"
+						+ "d.style['-webkit-transition-timing-function'] = 'linear';"
 
-						+ "console.log(\"" + columnCount + "\");"
-						+ "d.style.WebkitColumnWidth='" + displayWidth + "px';";
+						+ "d.style.WebkitColumnCount= pageCount;"
+						+ "d.style.WebkitColumnWidth='"
+						+ (displayWidth - SCREEN_PADDING * 2) + "px';"
+
+						+ "window.interface.setColumnCount(pageCount);"
+						+ "window.interface.setColumnWidth(screen.width);";
 				webView.loadUrl("javascript:(function(){" + js + "})()");
 			}
 		});
 
 		webView.setWebChromeClient(new WebChromeClient() {
 			public boolean onConsoleMessage(ConsoleMessage cm) {
-				Log.d("MyApplication",
+				Log.d("ReaderView",
 						cm.message() + " -- From line " + cm.lineNumber()
 								+ " of " + cm.sourceId());
 				return true;
 			}
+
+			public void onProgressChanged(WebView view, int progress) {
+
+			}
+
 		});
 
-		webView.getSettings().setJavaScriptEnabled(true);
+		webSettings = webView.getSettings();
+		webSettings.setJavaScriptEnabled(true);
 		webView.setVerticalScrollBarEnabled(false);
 		webView.setHorizontalScrollBarEnabled(false);
 
@@ -146,7 +189,7 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 			showDialog(TOC_MENU);
 			return true;
 		case R.id.font_size:
-			showFontSizeMenu();
+			showDialog(FONT_SIZE_MENU);
 			return true;
 		case R.id.home:
 			super.onBackPressed();
@@ -164,18 +207,36 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 			List<String> tocTitles = currentDoc.getTOC().getItemTitles();
 			final CharSequence[] items = tocTitles
 					.toArray(new CharSequence[tocTitles.size()]);
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 			builder.setTitle(R.string.tableOfContents);
 			builder.setSingleChoiceItems(items, -1,
 					new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int item) {
+							currentPageIndex = 1;
 							readDocumentTOCEntry(item);
 							dialog.dismiss();
 						}
 					});
 			AlertDialog alert = builder.create();
 			return alert;
+		case FONT_SIZE_MENU:
+			Dialog fontDialog = new Dialog(this);
+
+			fontDialog.setContentView(R.layout.dialog_fontsize);
+			fontDialog.setTitle(R.string.font_size_msg);
+			fontDialog.setCanceledOnTouchOutside(true);
+			fontDialog.setCancelable(true);
+			NumberPicker picker = (NumberPicker) fontDialog
+					.findViewById(R.id.num_picker);
+
+			int fontSize = webSettings.getDefaultFontSize();
+			int minFontSize = webSettings.getMinimumFontSize();
+			picker.setRange(minFontSize, MAX_FONT_SIZE);
+			picker.setCurrent(fontSize);
+			picker.setOnChangeListener(this);
+
+			return fontDialog;
 		default:
 			return super.onCreateDialog(id);
 		}
@@ -185,10 +246,6 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 	protected void onPrepareDialog(int id, Dialog dialog) {
 		// TODO Auto-generated method stub
 		super.onPrepareDialog(id, dialog);
-	}
-
-	private void showFontSizeMenu() {
-
 	}
 
 	@Override
@@ -220,15 +277,12 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 	public void onSingleTapConfirmed(MotionEvent e) {
 		float x = e.getX();
 		float sub = displayWidth - x;
-		
-		if(sub < SCREEN_TAP_SIZE){
+
+		if (sub < SCREEN_TAP_SIZE) {
 			navigate(currentPageIndex + 1);
-		}
-		else if(sub > (displayWidth - SCREEN_TAP_SIZE)){
+		} else if (sub > (displayWidth - SCREEN_TAP_SIZE)) {
 			navigate(currentPageIndex - 1);
 		}
-			
-		
 
 	}
 
@@ -239,15 +293,12 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 			currentTOCIndex--;
 			if (tocSize >= currentTOCIndex && currentTOCIndex >= 0) {
 				readDocumentTOCEntry(currentTOCIndex);
-				Log.e(TAG,"CoumnCount in navigate:" + columnCount);
-				//not working because columnCount has old value at this point (onPageFinished has not been raised)
-				//TODO: fix it
-				//currentPageIndex = columnCount;
-				//goToPage(columnCount);
+				currentPageIndex = 1;
+				new GoToPageTask().execute();
 			} else
 				currentTOCIndex = 0;
 		} else if (page <= columnCount) {
-			goToPage(page);
+			goToPage(page,true);
 		} else {
 			currentTOCIndex++;
 			if (tocSize >= currentTOCIndex && currentTOCIndex >= 0) {
@@ -261,45 +312,133 @@ public class ReaderView extends Activity implements SimpleGestureListener {
 
 	private void readDocumentTOCEntry(int entryIndex) {
 
-		try {
-			List<TOCEntry> toc = currentDoc.getTOC().getItems();
-			InputStream in = currentDoc.getResources()
-					.getByHref(toc.get(entryIndex).getSrc()).getInputStream();
+		new LoadDocTask().execute(entryIndex);
+		progressDialog = ProgressDialog.show(ReaderView.this, "Please wait...",
+				"Parsing..", true);
 
-			final BufferedReader breader = new BufferedReader(
-					new InputStreamReader(in));
-			StringBuilder b = new StringBuilder();
-			String line;
+	}
 
-			while ((line = breader.readLine()) != null) {
-				b.append(line);
+	private void goToPage(int pageIndex, boolean withCSS3) {
+
+		int moveWidth = (pageIndex - 1) * columnWidth;
+
+		String js = "";
+		if(withCSS3){
+			js = "var d = document.getElementsByTagName('body')[0];"
+				+ "d.style['-webkit-transform'] = 'translate3d(-" + moveWidth
+				+ "px,0px,0px)';";
+		}else{
+			js = "var d = document.getElementsByTagName('body')[0];"
+				+ "window.scrollTo( " + moveWidth+ ", 0) ;";
+		}
+
+		webView.loadUrl("javascript:(function(){" + js + "})()");
+		currentPageIndex = pageIndex;
+	}
+
+	// for NumberPicker
+	@Override
+	public void onChanged(NumberPicker picker, int oldVal, int newVal) {
+		webSettings.setDefaultFontSize(newVal);
+		webView.invalidate();
+		webView.reload();
+		navigate(currentPageIndex);
+	}
+
+	private class GoToPageTask extends AsyncTask<Void, Void, Void> {
+
+		@Override
+		protected Void doInBackground(Void... params) {
+
+			lock.lock();
+			try {
+				while (isPageLoaded == false) {
+					condition.await();
+				}
+
+				isPageLoaded = true;
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage());
+			} finally {
+				lock.unlock();
 			}
-			breader.close();
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			goToPage(columnCount,false);
+			super.onPostExecute(result);
+		}
+	}
+
+	private class LoadDocTask extends AsyncTask<Integer, Void, String> {
+
+		@Override
+		protected String doInBackground(Integer... params) {
+
+			String htmlContent = "";
+			try {
+				List<TOCEntry> toc = currentDoc.getTOC().getItems();
+				InputStream in = currentDoc.getResources()
+						.getByHref(toc.get(params[0].intValue()).getSrc())
+						.getInputStream();
+
+				final BufferedReader breader = new BufferedReader(
+						new InputStreamReader(in));
+				StringBuilder b = new StringBuilder();
+				String line;
+
+				while ((line = breader.readLine()) != null) {
+					b.append(line);
+				}
+				breader.close();
+				htmlContent = b.toString();
+
+			} catch (IOException e) {
+				Log.e(TAG, e.getMessage());
+			}
+
+			return htmlContent;
+		}
+
+		@Override
+		protected void onPostExecute(String result) {
+
+			isPageLoaded = false;
+
 			webView.clearHistory();
 			webView.clearFormData();
 			webView.clearCache(true);
-			webView.loadData(b.toString(), "text/html", "utf-8");
-		} catch (IOException e) {
-			Log.e(TAG, e.getMessage());
+			webView.loadData(result, "text/html", "utf-8");
+
+			progressDialog.dismiss();
+
+			super.onPostExecute(result);
 		}
 
 	}
 
-	private void goToPage(int pageIndex) {
+	final class JSInterface {
+		JSInterface() {
+		}
 
-		int moveWidth = (pageIndex - 1) * (displayWidth + 75);
-		Log.e(TAG, "Width:" + moveWidth + " PageIndex:" + pageIndex);
-		String js = "var d = document.getElementsByTagName('body')[0];"
-				+ "d.style['-webkit-transform'] = 'translate3d(-" 
-				+ moveWidth
-				+ "px,0px,0px)';";
-		
-		webView.loadUrl("javascript:(function(){" + js + "})()");
-		currentPageIndex = pageIndex;
+		public void setColumnCount(int count) {
+			lock.lock();
 
-		// webView.scrollBy(moveWidth, 0);
-		// webView.loadUrl("javascript:(function(){window.scrollTo(" +
-		// (pageIndex*displayWidth) +"+window.scrollX,window.scrollY);})()");
+			try {
+				columnCount = count;
+				isPageLoaded = true;
+				condition.signalAll();
+			} finally {
+				lock.unlock();
+			}
 
+		}
+
+		public void setColumnWidth(int width) {
+			Log.e(TAG, "Width:" + width + " Col " + columnCount);
+			columnWidth = width;
+		}
 	}
 }
