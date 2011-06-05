@@ -12,6 +12,7 @@ import java.util.Set;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import thesis.drmReader.DocumentLink;
 import thesis.pedlib.util.MediaType;
 import thesis.pedlib.util.MediaTypeService;
 import thesis.pedlib.util.ResourceUtil;
@@ -42,10 +43,13 @@ public class DocumentReader {
 
 	}
 
-	public static void getPreview(Resource packageResource, Document doc, String pedFilePath) {
+	public static void getPreview(Resource packageResource, DocumentLink doc) {
 
-		doc.setMetadata(DocumentMetadataReader.read(packageResource));
-		readCover(packageResource, doc, pedFilePath);
+		Metadata meta = DocumentMetadataReader.read(packageResource);
+		doc.setAuthor(meta.getAuthors().get(0));
+		doc.setSubject(meta.getSubject());
+		doc.setTitle(meta.getTitle());
+		readCover(packageResource, doc);
 	}
 
 	/**
@@ -205,14 +209,13 @@ public class DocumentReader {
 	 * @param pedFilePath
 	 * @return
 	 */
-	private static void readCover(Resource packageResource, Document doc,
-			String pedFilePath) {
+	private static void readCover(Resource packageResource, DocumentLink doc) {
 
 		Collection<String> coverHrefs = findCoverHrefs(packageResource);
 		for (String coverHref : coverHrefs) {
 			Resource resource = null;
 			try {
-				resource = ResourceUtil.getResourceFromPed(pedFilePath, "DOC/"
+				resource = ResourceUtil.getResourceFromPed(doc.getId(), "DOC/"
 						+ coverHref);
 			} catch (IOException e) {
 				Log.e("readCover", e.getMessage());
@@ -222,7 +225,8 @@ public class DocumentReader {
 			}
 
 			if (MediaTypeService.isBitmapImage(resource.getMediaType())) {
-				doc.setCoverImage(resource);
+				doc.setCoverResource(resource);
+				doc.setCoverUrl(resource.getHref());
 			}
 		}
 	}

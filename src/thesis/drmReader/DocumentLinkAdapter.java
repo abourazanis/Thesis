@@ -1,13 +1,9 @@
 package thesis.drmReader;
 
-import java.io.BufferedInputStream;
 import java.util.ArrayList;
 
 import thesis.imageLazyLoader.ImageLoader;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -64,8 +60,17 @@ public class DocumentLinkAdapter extends ArrayAdapter<DocumentLink> {
 
 		DocumentLink doc = documents.get(position);
 		if (doc != null) {
-
-			imageLoader.DisplayImage(doc.getCoverUrl(), holder.imageView);
+			holder.imageView.setTag(doc.getCoverUrl());
+			if (doc.getCoverResource() != null) {
+				try {
+					imageLoader.DisplayImage(doc.getCoverUrl(), doc
+							.getCoverResource().getInputStream(),
+							holder.imageView);
+				} catch (Exception e) {
+				}
+			} else {
+				imageLoader.DisplayImage(doc.getCoverUrl(), holder.imageView);
+			}
 
 			holder.textViewBottom.setText(doc.getSubject());
 			holder.textViewTop.setText(doc.getAuthor());

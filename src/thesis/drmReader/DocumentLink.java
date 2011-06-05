@@ -1,10 +1,13 @@
 package thesis.drmReader;
 
+import thesis.pedlib.ped.Resource;
+
 public class DocumentLink {
 	private String title;
 	private String author;
 	private String subject;
 	private String coverUrl;
+	private Resource coverResource;
 	private String id;
 
 	public DocumentLink() {
@@ -62,6 +65,14 @@ public class DocumentLink {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public Resource getCoverResource() {
+		return coverResource;
+	}
+
+	public void setCoverResource(Resource coverResource) {
+		this.coverResource = coverResource;
 	}
 
 }

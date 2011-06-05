@@ -10,6 +10,7 @@ import java.util.zip.ZipInputStream;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import thesis.drmReader.DocumentLink;
 import thesis.pedlib.util.ResourceUtil;
 import android.util.Log;
 
@@ -29,12 +30,11 @@ public class PedReader {
 		return result;
 	}
 
-	public Document getPedPreview(String pedFilePath, String encoding) {
-		Document result = new Document();
+	public DocumentLink getPedPreview(String pedFilePath, String encoding) {
+		DocumentLink result = new DocumentLink();
+		result.setId(pedFilePath);
 		String packageResourceHref = getPackageResourceHref(pedFilePath);
-		Resource packageResource = processPackageResource(packageResourceHref,pedFilePath,
-				result);
-		result.setDocResource(packageResource);
+		Resource packageResource = processPackageResource(packageResourceHref,	result);
 
 		return result;
 	}
@@ -135,12 +135,11 @@ public class PedReader {
 		return packageResource;
 	}
 
-	private Resource processPackageResource(String packageResourceHref,String pedFilePath,
-			Document doc) {
+	private Resource processPackageResource(String packageResourceHref,DocumentLink doc) {
 		Resource packageResource = null;
 		try{
-		packageResource = ResourceUtil.getResourceFromPed(pedFilePath,packageResourceHref);
-		DocumentReader.getPreview(packageResource, doc, pedFilePath);
+		packageResource = ResourceUtil.getResourceFromPed(doc.getId(),packageResourceHref);
+		DocumentReader.getPreview(packageResource, doc);
 
 		}catch(Exception e){
 			Log.e("processPackageResource",e.getMessage());

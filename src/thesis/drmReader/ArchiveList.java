@@ -3,7 +3,6 @@ package thesis.drmReader;
 import java.io.File;
 import java.util.ArrayList;
 
-import thesis.pedlib.ped.Document;
 import thesis.pedlib.ped.PedReader;
 import android.app.Dialog;
 import android.app.ListActivity;
@@ -26,7 +25,17 @@ public class ArchiveList extends ListActivity {
 
 	private class ArchiveListState {
 		private ListDocumentsTask listTask;
-		private ArrayList<Document> docList;
+		private ArrayList<DocumentLink> docList;
+		private int dialogId = 999; //dummy value
+		
+
+		public void setDialogId(int id){
+			dialogId = id;
+		}
+		
+		public int getDialogId(){
+			return dialogId;
+		}
 
 		public ListDocumentsTask getListTask() {
 			return listTask;
@@ -36,20 +45,21 @@ public class ArchiveList extends ListActivity {
 			this.listTask = listTask;
 		}
 
-		public ArrayList<Document> getDocList() {
+		public ArrayList<DocumentLink> getDocList() {
 			return docList;
 		}
 
-		public void setDocList(ArrayList<Document> docList) {
+		public void setDocList(ArrayList<DocumentLink> docList) {
 			this.docList = docList;
 		}
 	}
 
-	private ArrayList<Document> docList;
-	private DocumentAdapter docAdapter;
+	private ArrayList<DocumentLink> docList;
+	private DocumentLinkAdapter docAdapter;
 	private ListDocumentsTask listTask;
 	private PedReader reader;
 	private boolean isDialogShowing = false;
+	private int dialogId = 999;
 	private final static int LIST_DOCUMENTS = 0;
 
 	/** Called when the activity is first created. */
@@ -59,8 +69,8 @@ public class ArchiveList extends ListActivity {
 		setContentView(R.layout.doclist);
 
 		reader = new PedReader();
-		docList = new ArrayList<Document>();
-		docAdapter = new DocumentAdapter(this, R.layout.list_item, docList);
+		docList = new ArrayList<DocumentLink>();
+		docAdapter = new DocumentLinkAdapter(this, R.layout.list_item, docList);
 		setListAdapter(docAdapter);
 		registerForContextMenu(getListView());
 
@@ -75,6 +85,7 @@ public class ArchiveList extends ListActivity {
 				docList.addAll(state.getDocList());
 				docAdapter.notifyDataSetChanged();
 			}
+			showDialog(state.getDialogId());
 
 		} else {
 			listTask = new ListDocumentsTask(this);
@@ -134,16 +145,27 @@ public class ArchiveList extends ListActivity {
 			state.setListTask(listTask);
 		}
 		state.setDocList(docList);
+		state.setDialogId(dialogId);
 
 		return (state);
 	}
+	
+	@Override
+    public void onDestroy()
+    {
+        docAdapter.imageLoader.stopThread();
+        this.setListAdapter(null);
+        super.onDestroy();
+    }
 
 	@Override
 	protected Dialog onCreateDialog(int id) {
-		isDialogShowing = true;
+		
 		ProgressDialog progressDialog = null;
 		switch (id) {
 		case LIST_DOCUMENTS:
+			isDialogShowing = true;
+			dialogId = LIST_DOCUMENTS;
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage("Populating list..");
 			// progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -156,19 +178,19 @@ public class ArchiveList extends ListActivity {
 	}
 
 	private void readDoc(int position) {
-		Document doc = (Document) this.getListAdapter().getItem(position);
+		DocumentLink doc = (DocumentLink) this.getListAdapter().getItem(position);
 		Intent intent = new Intent(this, ReaderView.class);
-		intent.putExtra("docSrc", doc.getPedPath());
+		intent.putExtra("docSrc", doc.getId());
 
 		startActivity(intent);
 
 	}
 
 	private void deleteDoc(int position) {
-		Document doc = (Document) this.getListAdapter().getItem(position);
+		DocumentLink doc = (DocumentLink) this.getListAdapter().getItem(position);
 		docAdapter.remove(doc);
 
-		File fileToRm = new File(doc.getPedPath());
+		File fileToRm = new File(doc.getId());
 		if (fileToRm.exists())
 			fileToRm.delete();
 
@@ -198,16 +220,14 @@ public class ArchiveList extends ListActivity {
 				// "/drmReader");
 				File docDir = new File(sdDir.getAbsolutePath());
 				if (docDir.exists() && docDir.canRead()) {
-					docList = new ArrayList<Document>();
+					docList = new ArrayList<DocumentLink>();
 					String[] fileList = docDir.list();
 					for (String filename : fileList) {
 						if (filename.endsWith(".ped")) {
 							String pedFilePath = sdDir.getAbsolutePath() + "/"
 									+ filename;
-							Document doc = reader.getPedPreview(pedFilePath,
+							DocumentLink doc = reader.getPedPreview(pedFilePath,
 									"UTF-8");
-							// TODO:remove
-							doc.setPedPath(pedFilePath);
 							docList.add(doc);
 						}
 					}
@@ -224,8 +244,10 @@ public class ArchiveList extends ListActivity {
 				for (int i = 0; i < docList.size(); i++)
 					docAdapter.add(docList.get(i));
 			}
-			if (activity.isDialogShowing)
+			if (activity.isDialogShowing){
 				activity.dismissDialog(LIST_DOCUMENTS);
+				activity.dialogId = 999;
+			}
 			docAdapter.notifyDataSetChanged();
 
 			super.onPostExecute(result);
@@ -238,8 +260,10 @@ public class ArchiveList extends ListActivity {
 		void attach(ArchiveList activity) {
 			this.activity = activity;
 			if (completed) {
-				if (activity.isDialogShowing)
+				if (activity.isDialogShowing){
 					activity.dismissDialog(LIST_DOCUMENTS);
+					activity.dialogId = 999;
+				}
 			}
 		}
 

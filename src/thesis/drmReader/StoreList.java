@@ -1,36 +1,46 @@
 package thesis.drmReader;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.http.util.ByteArrayBuffer;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import thesis.drmReader.RestClient.RequestMethod;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 
 public class StoreList extends ListActivity {
 
 	private class StoreListState {
-		public GetDocListTask docListTask = null;
-		public GetDocumentTask docTask = null;
-		public ArrayList<DocumentLink> docList;
+		private GetDocListTask docListTask = null;
+		private GetDocumentTask docTask = null;
+		private ArrayList<DocumentLink> docList;
+		private int dialogId = 999; //dummy value
+		
 
+		public void setDialogId(int id){
+			dialogId = id;
+		}
+		
+		public int getDialogId(){
+			return dialogId;
+		}
+		
 		public GetDocListTask getDocListTask() {
 			return docListTask;
 		}
@@ -59,6 +69,7 @@ public class StoreList extends ListActivity {
 	private ArrayList<DocumentLink> docList;
 	private DocumentLinkAdapter docLinkAdapter;
 	private boolean isDialogShowing;
+	private int dialogId = 999;
 	private String docDown;
 	private GetDocumentTask docTask;
 	private GetDocListTask docListTask;
@@ -72,8 +83,11 @@ public class StoreList extends ListActivity {
 	private final static String DOCLINK = "pedInfo";
 	private final static String DOCID = "id";
 
-	public final static int DOWNLOAD_DOCUMENT = 0;
-	public final static int DOWNLOAD_DOCLIST = 1;
+	private final static int HTTP_RESPONSE_OK = 200;
+	private final static int DOWNLOAD_DOCUMENT = 0;
+	private final static int DOWNLOAD_DOCLIST = 1;
+	private final static int DOWNLOAD_DOCLIST_ALERT = 2;
+	private final static int DOWNLOAD_DOCUMENT_ALERT = 3;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -102,12 +116,34 @@ public class StoreList extends ListActivity {
 				docList.addAll(state.getDocList());
 				docLinkAdapter.notifyDataSetChanged();
 			}
+			showDialog(state.getDialogId());
 
 		} else {
 			docListTask = new GetDocListTask(this);
 			docListTask.execute(URL);
 		}
 
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.store_list_menu, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.refresh:
+			if(docListTask.getStatus() == AsyncTask.Status.FINISHED){
+				docListTask = new GetDocListTask(this);
+				docListTask.execute(URL);
+			}
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 
 	@Override
@@ -120,12 +156,21 @@ public class StoreList extends ListActivity {
 		}
 		if (docTask != null) {
 			docTask.detach();
-			state.setDocTask(docTask);	
+			state.setDocTask(docTask);
 		}
 		state.setDocList(docList);
+		state.setDialogId(dialogId);
 
 		return (state);
 	}
+	
+	@Override
+    public void onDestroy()
+    {
+		docLinkAdapter.imageLoader.stopThread();
+        this.setListAdapter(null);
+        super.onDestroy();
+    }
 
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
@@ -144,10 +189,11 @@ public class StoreList extends ListActivity {
 
 	@Override
 	protected Dialog onCreateDialog(int id) {
-		isDialogShowing = true;
 		ProgressDialog progressDialog = null;
 		switch (id) {
 		case DOWNLOAD_DOCUMENT:
+			isDialogShowing = true;
+			dialogId = DOWNLOAD_DOCUMENT;
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage("Downloading document..");
 			// progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -155,11 +201,51 @@ public class StoreList extends ListActivity {
 			progressDialog.show();
 			return progressDialog;
 		case DOWNLOAD_DOCLIST:
+			isDialogShowing = true;
+			dialogId = DOWNLOAD_DOCLIST;
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage("Downloading document list..");
 			progressDialog.setCancelable(false);
 			progressDialog.show();
 			return progressDialog;
+		case DOWNLOAD_DOCLIST_ALERT:
+			dialogId = DOWNLOAD_DOCLIST_ALERT;
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setMessage("An network error occurred during the document list download process.Please try again or go back.")
+			       .setCancelable(false)
+					// .setTitle("Attention")
+					// .setIcon(R.drawable.ic_stat_alert)
+			       .setPositiveButton("Retry", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			        	   docListTask = new GetDocListTask(StoreList.this);
+			   			   docListTask.execute(URL);
+			           }
+			       })
+			       .setNegativeButton("Back", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			                dialog.cancel();
+			           }
+			       });
+			return  builder.create();
+		case DOWNLOAD_DOCUMENT_ALERT:
+			dialogId = DOWNLOAD_DOCUMENT_ALERT;
+			AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
+			builder2.setMessage("An network error occurred during the document download process.Please try again or go back.")
+			       .setCancelable(false)
+//			       .setTitle("Attention")
+//			       .setIcon(R.drawable.ic_stat_alert)
+			       .setPositiveButton("Retry", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			        	   docTask = new GetDocumentTask(StoreList.this);
+			   			   docTask.execute(docDown);
+			           }
+			       })
+			       .setNegativeButton("Back", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			                dialog.cancel();
+			           }
+			       });
+			return  builder2.create();
 
 		default:
 			return null;
@@ -236,6 +322,7 @@ public class StoreList extends ListActivity {
 
 		StoreList activity = null;
 		String responseString = null;
+		int responseCode;
 		boolean completed = false;
 
 		GetDocListTask(StoreList activity) {
@@ -258,6 +345,7 @@ public class StoreList extends ListActivity {
 				e.printStackTrace();
 			}
 			responseString = client.getResponse();
+			responseCode = client.getResponseCode();
 
 			return responseString;
 
@@ -266,10 +354,18 @@ public class StoreList extends ListActivity {
 		@Override
 		protected void onPostExecute(String result) {
 			completed = true;
-			activity.docList.addAll(activity.parseXMLResult(result));
-			activity.docLinkAdapter.notifyDataSetChanged();
-			if (activity.isDialogShowing)
+			if (responseCode == HTTP_RESPONSE_OK) {
+				activity.docList.addAll(activity.parseXMLResult(result));
+				activity.docLinkAdapter.notifyDataSetChanged();
+			}
+			if (activity.isDialogShowing){
 				activity.dismissDialog(DOWNLOAD_DOCLIST);
+				activity.dialogId = 999;
+			}
+			if (responseCode != HTTP_RESPONSE_OK) {
+				activity.showDialog(DOWNLOAD_DOCLIST_ALERT);
+			}
+
 		}
 
 		void detach() {
@@ -278,9 +374,11 @@ public class StoreList extends ListActivity {
 
 		void attach(StoreList activity) {
 			this.activity = activity;
-				if (activity.isDialogShowing)
-					activity.dismissDialog(DOWNLOAD_DOCLIST);
+			if (activity.isDialogShowing){
+				activity.dismissDialog(DOWNLOAD_DOCLIST);
+				activity.dialogId = 999;
 			}
+		}
 
 	}
 
@@ -288,6 +386,7 @@ public class StoreList extends ListActivity {
 
 		StoreList activity = null;
 		boolean completed = false;
+		int responseCode;
 
 		GetDocumentTask(StoreList activity) {
 			this.activity = activity;
@@ -302,9 +401,11 @@ public class StoreList extends ListActivity {
 		@Override
 		protected Void doInBackground(String... params) {
 
-			RestClient client = new RestClient(GETDOCURL + params[0], true, params[0] + ".ped");
+			RestClient client = new RestClient(GETDOCURL + params[0], true,
+					params[0] + ".ped");
 			try {
 				client.Execute(RequestMethod.GET);
+				responseCode = client.getResponseCode();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -319,8 +420,13 @@ public class StoreList extends ListActivity {
 		protected void onPostExecute(Void result) {
 			completed = true;
 			super.onPostExecute(result);
-			if (activity.isDialogShowing)
+			if (activity.isDialogShowing){
 				activity.dismissDialog(DOWNLOAD_DOCUMENT);
+				activity.dialogId = 999;
+			}
+			if (responseCode != HTTP_RESPONSE_OK) {
+				activity.showDialog(DOWNLOAD_DOCUMENT_ALERT);
+			}
 		}
 
 		void detach() {
@@ -330,11 +436,13 @@ public class StoreList extends ListActivity {
 		void attach(StoreList activity) {
 			this.activity = activity;
 			if (completed) {
-				if (activity.isDialogShowing)
+				if (activity.isDialogShowing){
 					activity.dismissDialog(DOWNLOAD_DOCUMENT);
+					activity.dialogId = 999;
+				}
 			}
 		}
-	
+
 	}
 
 	public static int safeLongToInt(long l) {

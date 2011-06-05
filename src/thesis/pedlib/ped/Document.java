@@ -87,8 +87,8 @@ public class Document {
 				resources.add(coverImage);
 			}
 		}
-			
-		metaData.setCoverImage(coverImage);
+		if(metaData != null)	
+			metaData.setCoverImage(coverImage);
 	}
 
 }
