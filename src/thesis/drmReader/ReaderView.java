@@ -14,12 +14,14 @@ import thesis.drmReader.NumberPicker.OnChangedListener;
 import thesis.drmReader.SimpleGestureFilter.SimpleGestureListener;
 import thesis.pedlib.ped.Document;
 import thesis.pedlib.ped.PedReader;
+import thesis.pedlib.ped.Resource;
 import thesis.pedlib.ped.TOCEntry;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -66,6 +68,30 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		setUpUI();
+
+		Bundle extras = getIntent().getExtras();
+		if (extras == null) {
+			return;
+		}
+
+		String docSrc = extras.getString("docSrc");
+		if (docSrc != null && docSrc != "") {
+			PedReader reader = new PedReader(this);
+			try {
+				ZipInputStream ped = new ZipInputStream(new FileInputStream(
+						docSrc));
+				currentDoc = reader.readPed(ped, "UTF-8");
+				currentPageIndex = 1;
+				readDocumentTOCEntry(0);
+
+			} catch (Exception e) {
+				Log.e(TAG, e.getMessage());
+			}
+		}
+	}
+
+	private void setUpUI() {
 		webView = new WebView(this) {
 			@Override
 			public boolean onTouchEvent(MotionEvent ev) {
@@ -92,10 +118,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 				// Column Count is just the number of 'screens' of text. Add one
 				// for partial 'screens'
 				columnCount = (view.getContentHeight() / view.getHeight()) + 1;
-				Log.e(TAG, "WwebView columns:" + columnCount
-						+ " ContentHeight:" + view.getContentHeight()
-						+ " Height:" + view.getHeight() + " Width:"
-						+ displayWidth);
 
 				// css3 column module & webkit transition setup
 				String js = "var d = document.getElementsByTagName('body')[0];"
@@ -140,39 +162,20 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 				return true;
 			}
 
-			public void onProgressChanged(WebView view, int progress) {
-
-			}
-
 		});
 
 		webSettings = webView.getSettings();
 		webSettings.setJavaScriptEnabled(true);
 		webView.setVerticalScrollBarEnabled(false);
 		webView.setHorizontalScrollBarEnabled(false);
+	}
 
-		Bundle extras = getIntent().getExtras();
-		if (extras == null) {
-			return;
-		}
-
-		// TODO: new thread
-		String docSrc = extras.getString("docSrc");
-		if (docSrc != null && docSrc != "") {
-			PedReader reader = new PedReader();
-			try {
-				ZipInputStream ped = new ZipInputStream(new FileInputStream(
-						docSrc));
-				currentDoc = reader.readPed(ped, "UTF-8");
-				currentPageIndex = 1;
-				readDocumentTOCEntry(0);
-
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
-			}
-
-		}
-
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		// setUpUI();
+		webView.reload();
+		currentPageIndex = 1;
 	}
 
 	@Override
@@ -298,7 +301,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			} else
 				currentTOCIndex = 0;
 		} else if (page <= columnCount) {
-			goToPage(page,true);
+			goToPage(page, true);
 		} else {
 			currentTOCIndex++;
 			if (tocSize >= currentTOCIndex && currentTOCIndex >= 0) {
@@ -312,7 +315,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 	private void readDocumentTOCEntry(int entryIndex) {
 
-		new LoadDocTask().execute(entryIndex);
+		new LoadDocTask(this).execute(entryIndex);
 		progressDialog = ProgressDialog.show(ReaderView.this, "Please wait...",
 				"Parsing..", true);
 
@@ -323,13 +326,13 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		int moveWidth = (pageIndex - 1) * columnWidth;
 
 		String js = "";
-		if(withCSS3){
+		if (withCSS3) {
 			js = "var d = document.getElementsByTagName('body')[0];"
-				+ "d.style['-webkit-transform'] = 'translate3d(-" + moveWidth
-				+ "px,0px,0px)';";
-		}else{
+					+ "d.style['-webkit-transform'] = 'translate3d(-"
+					+ moveWidth + "px,0px,0px)';";
+		} else {
 			js = "var d = document.getElementsByTagName('body')[0];"
-				+ "window.scrollTo( " + moveWidth+ ", 0) ;";
+					+ "window.scrollTo( " + moveWidth + ", 0) ;";
 		}
 
 		webView.loadUrl("javascript:(function(){" + js + "})()");
@@ -367,22 +370,27 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 		@Override
 		protected void onPostExecute(Void result) {
-			goToPage(columnCount,false);
+			goToPage(columnCount, false);
 			super.onPostExecute(result);
 		}
 	}
 
 	private class LoadDocTask extends AsyncTask<Integer, Void, String> {
 
+		ReaderView activity = null;
+		
+		LoadDocTask(ReaderView activity){
+			this.activity = activity;
+		}
+		
 		@Override
 		protected String doInBackground(Integer... params) {
 
 			String htmlContent = "";
 			try {
 				List<TOCEntry> toc = currentDoc.getTOC().getItems();
-				InputStream in = currentDoc.getResources()
-						.getByHref(toc.get(params[0].intValue()).getSrc())
-						.getInputStream();
+				Resource resource = currentDoc.getResources().getByHref(toc.get(params[0].intValue()).getSrc());
+				InputStream in = resource.getInputStream();
 
 				final BufferedReader breader = new BufferedReader(
 						new InputStreamReader(in));
@@ -416,6 +424,14 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 			super.onPostExecute(result);
 		}
+		
+		void detach() {
+			activity = null;
+		}
+
+		void attach(ReaderView activity) {
+			this.activity = activity;
+		}
 
 	}
 
@@ -437,7 +453,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		}
 
 		public void setColumnWidth(int width) {
-			Log.e(TAG, "Width:" + width + " Col " + columnCount);
 			columnWidth = width;
 		}
 	}

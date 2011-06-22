@@ -10,8 +10,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import org.xml.sax.InputSource;
-
-
 import thesis.pedlib.ped.Resource;
 
 public class ResourceUtil {

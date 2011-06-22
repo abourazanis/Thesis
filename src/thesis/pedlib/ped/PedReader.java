@@ -12,16 +12,23 @@ import org.xmlpull.v1.XmlPullParserFactory;
 
 import thesis.drmReader.DocumentLink;
 import thesis.pedlib.util.ResourceUtil;
+import android.content.Context;
 import android.util.Log;
 
-
 public class PedReader {
+
+	private Context context;
+
+	public PedReader(Context context) {
+		this.context = context;
+	}
 
 	public Document readPed(ZipInputStream in, String encoding)
 			throws IOException {
 		Document result = new Document();
 		Map<String, Resource> resources = readResources(in, encoding);
 		handleMimeType(result, resources);
+
 		String packageResourceHref = getPackageResourceHref(result, resources);
 		Resource packageResource = processPackageResource(packageResourceHref,
 				result, resources);
@@ -34,7 +41,8 @@ public class PedReader {
 		DocumentLink result = new DocumentLink();
 		result.setId(pedFilePath);
 		String packageResourceHref = getPackageResourceHref(pedFilePath);
-		Resource packageResource = processPackageResource(packageResourceHref,	result);
+		Resource packageResource = processPackageResource(packageResourceHref,
+				result);
 
 		return result;
 	}
@@ -82,8 +90,9 @@ public class PedReader {
 		String result = defaultResult;
 
 		try {
-			Resource resource = ResourceUtil.getResourceFromPed(pedFilePath,"META-INF/container.xml");
-			if(resource == null){
+			Resource resource = ResourceUtil.getResourceFromPed(pedFilePath,
+					"META-INF/container.xml");
+			if (resource == null) {
 				return result;
 			}
 			result = getPackageHref(resource.getReader());
@@ -130,21 +139,25 @@ public class PedReader {
 	private Resource processPackageResource(String packageResourceHref,
 			Document doc, Map<String, Resource> resources) {
 		Resource packageResource = resources.remove(packageResourceHref);
+
 		DocumentReader.read(packageResource, doc, resources);
 
 		return packageResource;
 	}
 
-	private Resource processPackageResource(String packageResourceHref,DocumentLink doc) {
+	private Resource processPackageResource(String packageResourceHref,
+			DocumentLink doc) {
 		Resource packageResource = null;
-		try{
-		packageResource = ResourceUtil.getResourceFromPed(doc.getId(),packageResourceHref);
-		DocumentReader.getPreview(packageResource, doc);
+		try {
+			packageResource = ResourceUtil.getResourceFromPed(doc.getId(),
+					packageResourceHref);
 
-		}catch(Exception e){
-			Log.e("processPackageResource",e.getMessage());
+			DocumentReader.getPreview(packageResource, doc);
+
+		} catch (Exception e) {
+			Log.e("processPackageResource", e.getMessage());
 		}
-		
+
 		return packageResource;
 	}
 

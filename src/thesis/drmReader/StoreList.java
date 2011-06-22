@@ -14,6 +14,7 @@ import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -427,6 +428,11 @@ public class StoreList extends ListActivity {
 			if (responseCode != HTTP_RESPONSE_OK) {
 				activity.showDialog(DOWNLOAD_DOCUMENT_ALERT);
 			}
+			
+			Intent i = new Intent();
+		    i.setAction("thesis.drmReader.POPULATE_LIST");
+		    sendBroadcast(i);
+
 		}
 
 		void detach() {

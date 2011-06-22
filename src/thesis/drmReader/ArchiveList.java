@@ -7,7 +7,10 @@ import thesis.pedlib.ped.PedReader;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -61,6 +64,9 @@ public class ArchiveList extends ListActivity {
 	private boolean isDialogShowing = false;
 	private int dialogId = 999;
 	private final static int LIST_DOCUMENTS = 0;
+	private MyListener listener = null;
+    private Boolean myListenerIsRegistered = false;
+
 
 	/** Called when the activity is first created. */
 	@Override
@@ -68,7 +74,8 @@ public class ArchiveList extends ListActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.doclist);
 
-		reader = new PedReader();
+		listener = new MyListener(this);
+		reader = new PedReader(this);
 		docList = new ArrayList<DocumentLink>();
 		docAdapter = new DocumentLinkAdapter(this, R.layout.list_item, docList);
 		setListAdapter(docAdapter);
@@ -93,6 +100,26 @@ public class ArchiveList extends ListActivity {
 		}
 
 	}
+	
+	@Override
+    protected void onResume() {
+        super.onResume();
+
+        if (!myListenerIsRegistered) {
+            registerReceiver(listener, new IntentFilter("thesis.drmReader.POPULATE_LIST"));
+            myListenerIsRegistered = true;
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+//        if (myListenerIsRegistered) {
+//            unregisterReceiver(listener);
+//            myListenerIsRegistered = false;
+//        }
+    }
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
@@ -268,5 +295,25 @@ public class ArchiveList extends ListActivity {
 		}
 
 	}
+	
+	protected class MyListener extends BroadcastReceiver {
+		private ArchiveList activity;
+		
+		MyListener(ArchiveList activity){
+			this.activity = activity;
+		}
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            // No need to check for the action unless the listener will
+            // will handle more than one - let's do it anyway
+            if (intent.getAction().equals("thesis.drmReader.POPULATE_LIST")) {
+            	listTask = new ListDocumentsTask(activity);
+    			listTask.execute((Void) null);
+            }
+        }
+    }
+
 
 }

@@ -3,6 +3,8 @@ package thesis.drmReader;
 import java.util.ArrayList;
 
 import thesis.imageLazyLoader.ImageLoader;
+import thesis.pedlib.ped.Resource;
+import thesis.pedlib.util.ResourceUtil;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -63,8 +65,8 @@ public class DocumentLinkAdapter extends ArrayAdapter<DocumentLink> {
 			holder.imageView.setTag(doc.getCoverUrl());
 			if (doc.getCoverResource() != null) {
 				try {
-					imageLoader.DisplayImage(doc.getCoverUrl(), doc
-							.getCoverResource().getInputStream(),
+					Resource coverResource = doc.getCoverResource();
+					imageLoader.DisplayImage(doc.getCoverUrl(), coverResource.getInputStream(),
 							holder.imageView);
 				} catch (Exception e) {
 				}

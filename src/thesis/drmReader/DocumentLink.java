@@ -11,7 +11,7 @@ public class DocumentLink {
 	private String id;
 
 	public DocumentLink() {
-		this(null, null, null, null, null);
+		this(null, null, null);
 	}
 
 	public DocumentLink(String title, String author, String subject) {
