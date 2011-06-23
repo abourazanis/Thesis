@@ -2,9 +2,9 @@ package thesis.drmReader;
 
 import java.util.ArrayList;
 
+import nl.siegmann.epublib.domain.Metadata;
+import nl.siegmann.epublib.domain.Resource;
 import thesis.imageLazyLoader.ImageLoader;
-import thesis.pedlib.ped.Resource;
-import thesis.pedlib.util.ResourceUtil;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,13 +13,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-public class DocumentLinkAdapter extends ArrayAdapter<DocumentLink> {
+public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 
-	private final ArrayList<DocumentLink> documents;
+	private final ArrayList<BookLink> documents;
 	public ImageLoader imageLoader;
 
-	public DocumentLinkAdapter(Context context, int textViewResourceId,
-			ArrayList<DocumentLink> items) {
+	public BookLinkAdapter(Context context, int textViewResourceId,
+			ArrayList<BookLink> items) {
 		super(context, textViewResourceId, items);
 		documents = items;
 		imageLoader = new ImageLoader(context);
@@ -60,22 +60,23 @@ public class DocumentLinkAdapter extends ArrayAdapter<DocumentLink> {
 			holder = (ViewHolder) view.getTag();
 		}
 
-		DocumentLink doc = documents.get(position);
+		BookLink doc = documents.get(position);
 		if (doc != null) {
-			holder.imageView.setTag(doc.getCoverUrl());
-			if (doc.getCoverResource() != null) {
+			Metadata meta = doc.getMeta();
+			holder.imageView.setTag(doc.getId());
+			if (meta.getCoverImage() != null) {
 				try {
-					Resource coverResource = doc.getCoverResource();
-					imageLoader.DisplayImage(doc.getCoverUrl(), coverResource.getInputStream(),
+					Resource coverResource = meta.getCoverImage();
+					imageLoader.DisplayImage(doc.getId(), coverResource.getInputStream(),
 							holder.imageView);
 				} catch (Exception e) {
 				}
 			} else {
-				imageLoader.DisplayImage(doc.getCoverUrl(), holder.imageView);
+				imageLoader.DisplayImage(doc.getId(), holder.imageView);  
 			}
 
-			holder.textViewBottom.setText(doc.getSubject());
-			holder.textViewTop.setText(doc.getAuthor());
+			holder.textViewBottom.setText(meta.getSubjects().get(0));
+			holder.textViewTop.setText(meta.getAuthors().get(0).toString());
 		}
 
 		return view;

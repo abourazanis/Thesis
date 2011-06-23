@@ -1,9 +1,12 @@
 package thesis.drmReader;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.zip.ZipInputStream;
 
-import thesis.pedlib.ped.PedReader;
+import nl.siegmann.epublib.domain.Metadata;
+import nl.siegmann.epublib.epub.EpubReader;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -25,10 +28,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class ArchiveList extends ListActivity {
-
+	
 	private class ArchiveListState {
 		private ListDocumentsTask listTask;
-		private ArrayList<DocumentLink> docList;
+		private ArrayList<BookLink> docList;
 		private int dialogId = 999; //dummy value
 		
 
@@ -48,19 +51,20 @@ public class ArchiveList extends ListActivity {
 			this.listTask = listTask;
 		}
 
-		public ArrayList<DocumentLink> getDocList() {
+		public ArrayList<BookLink> getDocList() {
 			return docList;
 		}
 
-		public void setDocList(ArrayList<DocumentLink> docList) {
+		public void setDocList(ArrayList<BookLink> docList) {
 			this.docList = docList;
 		}
 	}
+	
+	private final static String TAG ="ArchiveList";
 
-	private ArrayList<DocumentLink> docList;
-	private DocumentLinkAdapter docAdapter;
+	private ArrayList<BookLink> docList;
+	private BookLinkAdapter docAdapter;
 	private ListDocumentsTask listTask;
-	private PedReader reader;
 	private boolean isDialogShowing = false;
 	private int dialogId = 999;
 	private final static int LIST_DOCUMENTS = 0;
@@ -75,9 +79,9 @@ public class ArchiveList extends ListActivity {
 		setContentView(R.layout.doclist);
 
 		listener = new MyListener(this);
-		reader = new PedReader(this);
-		docList = new ArrayList<DocumentLink>();
-		docAdapter = new DocumentLinkAdapter(this, R.layout.list_item, docList);
+		
+		docList = new ArrayList<BookLink>();
+		docAdapter = new BookLinkAdapter(this, R.layout.list_item, docList);
 		setListAdapter(docAdapter);
 		registerForContextMenu(getListView());
 
@@ -205,7 +209,7 @@ public class ArchiveList extends ListActivity {
 	}
 
 	private void readDoc(int position) {
-		DocumentLink doc = (DocumentLink) this.getListAdapter().getItem(position);
+		BookLink doc = (BookLink) this.getListAdapter().getItem(position);
 		Intent intent = new Intent(this, ReaderView.class);
 		intent.putExtra("docSrc", doc.getId());
 
@@ -214,7 +218,7 @@ public class ArchiveList extends ListActivity {
 	}
 
 	private void deleteDoc(int position) {
-		DocumentLink doc = (DocumentLink) this.getListAdapter().getItem(position);
+		BookLink doc = (BookLink) this.getListAdapter().getItem(position);
 		docAdapter.remove(doc);
 
 		File fileToRm = new File(doc.getId());
@@ -247,15 +251,24 @@ public class ArchiveList extends ListActivity {
 				// "/drmReader");
 				File docDir = new File(sdDir.getAbsolutePath());
 				if (docDir.exists() && docDir.canRead()) {
-					docList = new ArrayList<DocumentLink>();
+					docList = new ArrayList<BookLink>();
 					String[] fileList = docDir.list();
 					for (String filename : fileList) {
 						if (filename.endsWith(".ped")) {
-							String pedFilePath = sdDir.getAbsolutePath() + "/"
+							String epubFilePath = sdDir.getAbsolutePath() + "/"
 									+ filename;
-							DocumentLink doc = reader.getPedPreview(pedFilePath,
-									"UTF-8");
-							docList.add(doc);
+							try{
+								FileInputStream epubStream = new FileInputStream(
+										epubFilePath);
+							BookLink epubLink = new BookLink();
+							Metadata meta = (new EpubReader()).readEpubMetadata(epubStream);
+							EpubReader reader = new EpubReader();
+							epubLink.setMeta(meta);
+							epubLink.setId(epubFilePath);
+							docList.add(epubLink);
+							}catch(Exception e){
+								Log.e(TAG, e.getMessage());
+							}
 						}
 					}
 				}

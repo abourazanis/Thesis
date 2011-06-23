@@ -10,17 +10,17 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.ZipInputStream;
 
+import nl.siegmann.epublib.browsersupport.NavigationEvent;
+import nl.siegmann.epublib.browsersupport.NavigationEventListener;
+import nl.siegmann.epublib.browsersupport.Navigator;
+import nl.siegmann.epublib.domain.Book;
+import nl.siegmann.epublib.domain.Resource;
+import nl.siegmann.epublib.epub.EpubReader;
 import thesis.drmReader.NumberPicker.OnChangedListener;
 import thesis.drmReader.SimpleGestureFilter.SimpleGestureListener;
-import thesis.pedlib.ped.Document;
-import thesis.pedlib.ped.PedReader;
-import thesis.pedlib.ped.Resource;
-import thesis.pedlib.ped.TOCEntry;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -37,7 +37,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public class ReaderView extends Activity implements SimpleGestureListener,
-		OnChangedListener {
+		OnChangedListener, NavigationEventListener {
 
 	private static final int TOC_MENU = 0;
 	private static final int FONT_SIZE_MENU = 1;
@@ -60,9 +60,9 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private Condition condition = lock.newCondition();
 	private boolean isPageLoaded = false;
 
-	private Document currentDoc;
+	private Book currentDoc;
+	private Navigator navigator;
 	private int currentPageIndex = 0;
-	private int currentTOCIndex = 0;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -77,19 +77,21 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 		String docSrc = extras.getString("docSrc");
 		if (docSrc != null && docSrc != "") {
-			PedReader reader = new PedReader(this);
 			try {
-				ZipInputStream ped = new ZipInputStream(new FileInputStream(
-						docSrc));
-				currentDoc = reader.readPed(ped, "UTF-8");
+				FileInputStream epubStream = 
+						new FileInputStream(docSrc);
+				currentDoc = (new EpubReader()).readEpub(epubStream);
+				navigator = new Navigator(currentDoc); //here we have as current resource the cover
+				navigator.gotoNextSpineSection(this); //next spine section. TODO:find a way to display the cover and delete this
 				currentPageIndex = 1;
-				readDocumentTOCEntry(0);
+				
 
 			} catch (Exception e) {
 				Log.e(TAG, e.getMessage());
 			}
 		}
 	}
+	
 
 	private void setUpUI() {
 		webView = new WebView(this) {
@@ -206,23 +208,25 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	protected Dialog onCreateDialog(int id) {
 
 		switch (id) {
-		case TOC_MENU:
-			List<String> tocTitles = currentDoc.getTOC().getItemTitles();
-			final CharSequence[] items = tocTitles
-					.toArray(new CharSequence[tocTitles.size()]);
-
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setTitle(R.string.tableOfContents);
-			builder.setSingleChoiceItems(items, -1,
-					new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int item) {
-							currentPageIndex = 1;
-							readDocumentTOCEntry(item);
-							dialog.dismiss();
-						}
-					});
-			AlertDialog alert = builder.create();
-			return alert;
+		// TODO: implement new listview.See TableOfContentsPane for how to
+		// process TOC
+		// case TOC_MENU:
+		// List<String> tocTitles = currentDoc.getTOC().getItemTitles();
+		// final CharSequence[] items = tocTitles
+		// .toArray(new CharSequence[tocTitles.size()]);
+		//
+		// AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		// builder.setTitle(R.string.tableOfContents);
+		// builder.setSingleChoiceItems(items, -1,
+		// new DialogInterface.OnClickListener() {
+		// public void onClick(DialogInterface dialog, int item) {
+		// currentPageIndex = 1;
+		// readDocumentTOCEntry(item);
+		// dialog.dismiss();
+		// }
+		// });
+		// AlertDialog alert = builder.create();
+		// return alert;
 		case FONT_SIZE_MENU:
 			Dialog fontDialog = new Dialog(this);
 
@@ -290,32 +294,19 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	}
 
 	private void navigate(int page) {
-		int tocSize = currentDoc.getTOC().size();
 		if (page <= 0) {
 			currentPageIndex = 1;
-			currentTOCIndex--;
-			if (tocSize >= currentTOCIndex && currentTOCIndex >= 0) {
-				readDocumentTOCEntry(currentTOCIndex);
-				currentPageIndex = 1;
-				new GoToPageTask().execute();
-			} else
-				currentTOCIndex = 0;
+			navigator.gotoPreviousSpineSection(this);
 		} else if (page <= columnCount) {
 			goToPage(page, true);
 		} else {
-			currentTOCIndex++;
-			if (tocSize >= currentTOCIndex && currentTOCIndex >= 0) {
-				currentPageIndex = 1;
-				readDocumentTOCEntry(currentTOCIndex);
-			} else
-				currentTOCIndex = tocSize;
-
+			navigator.gotoNextSpineSection(this);
 		}
 	}
 
-	private void readDocumentTOCEntry(int entryIndex) {
+	private void readDocumentSpineEntry() {
 
-		new LoadDocTask(this).execute(entryIndex);
+		new LoadDocTask(this).execute();
 		progressDialog = ProgressDialog.show(ReaderView.this, "Please wait...",
 				"Parsing..", true);
 
@@ -375,21 +366,20 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		}
 	}
 
-	private class LoadDocTask extends AsyncTask<Integer, Void, String> {
+	private class LoadDocTask extends AsyncTask<Void, Void, String> {
 
 		ReaderView activity = null;
-		
-		LoadDocTask(ReaderView activity){
+
+		LoadDocTask(ReaderView activity) {
 			this.activity = activity;
 		}
-		
+
 		@Override
-		protected String doInBackground(Integer... params) {
+		protected String doInBackground(Void... params) {
 
 			String htmlContent = "";
 			try {
-				List<TOCEntry> toc = currentDoc.getTOC().getItems();
-				Resource resource = currentDoc.getResources().getByHref(toc.get(params[0].intValue()).getSrc());
+				Resource resource = activity.navigator.getCurrentResource();
 				InputStream in = resource.getInputStream();
 
 				final BufferedReader breader = new BufferedReader(
@@ -424,7 +414,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 			super.onPostExecute(result);
 		}
-		
+
 		void detach() {
 			activity = null;
 		}
@@ -455,5 +445,26 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		public void setColumnWidth(int width) {
 			columnWidth = width;
 		}
+	}
+
+	@Override
+	public void navigationPerformed(NavigationEvent navigationEvent) {
+		if (navigationEvent.isBookChanged()) {
+			//initBook(navigationEvent.getCurrentBook());
+		} else {
+			if (navigationEvent.isResourceChanged()) {
+				readDocumentSpineEntry();
+				currentPageIndex = 1;
+				new GoToPageTask().execute();
+			} else if (navigationEvent.isSectionPosChanged()) {
+				// editorPane.setCaretPosition(navigationEvent.getCurrentSectionPos());
+			}
+			// if
+			// (StringUtils.isNotBlank(navigationEvent.getCurrentFragmentId()))
+			// {
+			// scrollToNamedAnchor(navigationEvent.getCurrentFragmentId());
+			// }
+		}
+
 	}
 }

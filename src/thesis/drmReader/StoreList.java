@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.siegmann.epublib.domain.Author;
+import nl.siegmann.epublib.domain.Resource;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
@@ -30,7 +33,7 @@ public class StoreList extends ListActivity {
 	private class StoreListState {
 		private GetDocListTask docListTask = null;
 		private GetDocumentTask docTask = null;
-		private ArrayList<DocumentLink> docList;
+		private ArrayList<BookLink> docList;
 		private int dialogId = 999; //dummy value
 		
 
@@ -58,17 +61,17 @@ public class StoreList extends ListActivity {
 			this.docTask = docTask;
 		}
 
-		public ArrayList<DocumentLink> getDocList() {
+		public ArrayList<BookLink> getDocList() {
 			return docList;
 		}
 
-		public void setDocList(ArrayList<DocumentLink> docList) {
+		public void setDocList(ArrayList<BookLink> docList) {
 			this.docList = docList;
 		}
 	}
 
-	private ArrayList<DocumentLink> docList;
-	private DocumentLinkAdapter docLinkAdapter;
+	private ArrayList<BookLink> docList;
+	private BookLinkAdapter docLinkAdapter;
 	private boolean isDialogShowing;
 	private int dialogId = 999;
 	private String docDown;
@@ -95,8 +98,8 @@ public class StoreList extends ListActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.doclist);
 
-		docList = new ArrayList<DocumentLink>();
-		docLinkAdapter = new DocumentLinkAdapter(this, R.layout.list_item,
+		docList = new ArrayList<BookLink>();
+		docLinkAdapter = new BookLinkAdapter(this, R.layout.list_item,
 				docList);
 		setListAdapter(docLinkAdapter);
 		registerForContextMenu(getListView());
@@ -176,7 +179,7 @@ public class StoreList extends ListActivity {
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		super.onListItemClick(l, v, position, id);
-		DocumentLink docLink = (DocumentLink) this.getListAdapter().getItem(
+		BookLink docLink = (BookLink) this.getListAdapter().getItem(
 				position);
 		docDown = docLink.getId();
 		if (checkExternalMedia()) {
@@ -259,9 +262,9 @@ public class StoreList extends ListActivity {
 	 * @param xmlString
 	 * @return
 	 */
-	private List<DocumentLink> parseXMLResult(String xmlString) {
+	private List<BookLink> parseXMLResult(String xmlString) {
 
-		ArrayList<DocumentLink> docs = null;
+		ArrayList<BookLink> docs = null;
 		InputStream xmlInputStream = parseStringToIS(xmlString);
 		try {
 
@@ -272,28 +275,33 @@ public class StoreList extends ListActivity {
 			parser.setInput(xmlInputStream, null);
 			int type = parser.getEventType();
 
-			DocumentLink currentItem = null;
+			BookLink currentItem = null;
 			String name = "";
 			boolean done = false;
 			while (type != XmlPullParser.END_DOCUMENT && !done) {
 				switch (type) {
 				case XmlPullParser.START_DOCUMENT:
-					docs = new ArrayList<DocumentLink>();
+					docs = new ArrayList<BookLink>();
 					break;
 				case XmlPullParser.START_TAG:
 					name = parser.getName();
 					if (name.equalsIgnoreCase(DOCLINK)) {
 
-						currentItem = new DocumentLink();
+						currentItem = new BookLink();
 					} else if (currentItem != null) {
 						if (name.equalsIgnoreCase(TITLE)) {
-							currentItem.setTitle(parser.nextText());
+							ArrayList<String> titles = new ArrayList<String>();
+							titles.add(parser.nextText());
+							currentItem.getMeta().setTitles(titles);
 						} else if (name.equalsIgnoreCase(AUTHOR)) {
-							currentItem.setAuthor(parser.nextText());
+							currentItem.getMeta().addAuthor(new Author(parser.nextText()));
 						} else if (name.equalsIgnoreCase(SUBJECT)) {
-							currentItem.setCoverUrl(parser.nextText());
+							ArrayList<String> subjects = new ArrayList<String>();
+							subjects.add(parser.nextText());
+							currentItem.getMeta().setSubjects(subjects);
 						} else if (name.equalsIgnoreCase(COVER)) {
-							currentItem.setCoverUrl(parser.nextText());
+							Resource cover = new Resource(parser.nextText());
+							currentItem.getMeta().setCoverImage(cover);
 						} else if (name.equalsIgnoreCase(DOCID)) {
 							currentItem.setId(parser.nextText());
 						}
