@@ -254,7 +254,7 @@ public class ArchiveList extends ListActivity {
 					docList = new ArrayList<BookLink>();
 					String[] fileList = docDir.list();
 					for (String filename : fileList) {
-						if (filename.endsWith(".ped")) {
+						if (filename.endsWith(".epub")) {
 							String epubFilePath = sdDir.getAbsolutePath() + "/"
 									+ filename;
 							try{

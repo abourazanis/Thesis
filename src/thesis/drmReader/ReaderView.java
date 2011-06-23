@@ -5,10 +5,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.zip.ZipInputStream;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 import nl.siegmann.epublib.browsersupport.NavigationEvent;
 import nl.siegmann.epublib.browsersupport.NavigationEventListener;
@@ -16,6 +16,11 @@ import nl.siegmann.epublib.browsersupport.Navigator;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.epub.EpubReader;
+import nl.siegmann.epublib.util.ResourceUtil;
+
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
 import thesis.drmReader.NumberPicker.OnChangedListener;
 import thesis.drmReader.SimpleGestureFilter.SimpleGestureListener;
 import android.app.Activity;
@@ -82,9 +87,8 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 						new FileInputStream(docSrc);
 				currentDoc = (new EpubReader()).readEpub(epubStream);
 				navigator = new Navigator(currentDoc); //here we have as current resource the cover
+				navigator.addNavigationEventListener(this);
 				navigator.gotoNextSpineSection(this); //next spine section. TODO:find a way to display the cover and delete this
-				currentPageIndex = 1;
-				
 
 			} catch (Exception e) {
 				Log.e(TAG, e.getMessage());
@@ -380,10 +384,12 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			String htmlContent = "";
 			try {
 				Resource resource = activity.navigator.getCurrentResource();
-				InputStream in = resource.getInputStream();
+				
+				//InputStream in = resource.getInputStream();
 
-				final BufferedReader breader = new BufferedReader(
-						new InputStreamReader(in));
+				final BufferedReader breader = new BufferedReader(resource.getReader());
+//				final BufferedReader breader = new BufferedReader(
+//						new InputStreamReader(in));
 				StringBuilder b = new StringBuilder();
 				String line;
 

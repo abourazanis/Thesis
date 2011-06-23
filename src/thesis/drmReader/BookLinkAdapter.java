@@ -67,16 +67,18 @@ public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 			if (meta.getCoverImage() != null) {
 				try {
 					Resource coverResource = meta.getCoverImage();
-					imageLoader.DisplayImage(doc.getId(), coverResource.getInputStream(),
-							holder.imageView);
+					imageLoader.DisplayImage(doc.getId(),
+							coverResource.getInputStream(), holder.imageView);
 				} catch (Exception e) {
 				}
 			} else {
-				imageLoader.DisplayImage(doc.getId(), holder.imageView);  
+				imageLoader.DisplayImage(doc.getId(), holder.imageView);
 			}
 
-			holder.textViewBottom.setText(meta.getSubjects().get(0));
-			holder.textViewTop.setText(meta.getAuthors().get(0).toString());
+			if (!meta.getSubjects().isEmpty())
+				holder.textViewBottom.setText(meta.getSubjects().get(0));
+			if (!meta.getAuthors().isEmpty())
+				holder.textViewTop.setText(meta.getAuthors().get(0).toString());
 		}
 
 		return view;
