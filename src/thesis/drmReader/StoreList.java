@@ -138,6 +138,7 @@ public class StoreList extends ListActivity {
 		switch (item.getItemId()) {
 		case R.id.refresh:
 			if(docListTask.getStatus() == AsyncTask.Status.FINISHED){
+				
 				docListTask = new GetDocListTask(this);
 				docListTask.execute(URL);
 			}
@@ -356,6 +357,7 @@ public class StoreList extends ListActivity {
 		protected void onPostExecute(String result) {
 			completed = true;
 			if (responseCode == HTTP_RESPONSE_OK) {
+				activity.docList.clear();
 				activity.docList.addAll(activity.parseXMLResult(result));
 				activity.docLinkAdapter.notifyDataSetChanged();
 			}
