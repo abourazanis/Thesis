@@ -262,9 +262,10 @@ public class ArchiveList extends ListActivity {
 										epubFilePath);
 							BookLink epubLink = new BookLink();
 							Metadata meta = (new EpubReader()).readEpubMetadata(epubStream);
-							EpubReader reader = new EpubReader();
 							epubLink.setMeta(meta);
 							epubLink.setId(epubFilePath);
+							if(meta.getCoverImage() != null)
+								epubLink.setCoverUrl(meta.getCoverImage().getHref());
 							docList.add(epubLink);
 							}catch(Exception e){
 								Log.e(TAG, e.getMessage());

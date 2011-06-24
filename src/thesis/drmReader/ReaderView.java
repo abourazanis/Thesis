@@ -3,12 +3,8 @@ package thesis.drmReader;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 import nl.siegmann.epublib.browsersupport.NavigationEvent;
 import nl.siegmann.epublib.browsersupport.NavigationEventListener;
@@ -16,11 +12,6 @@ import nl.siegmann.epublib.browsersupport.Navigator;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.epub.EpubReader;
-import nl.siegmann.epublib.util.ResourceUtil;
-
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
 import thesis.drmReader.NumberPicker.OnChangedListener;
 import thesis.drmReader.SimpleGestureFilter.SimpleGestureListener;
 import android.app.Activity;
@@ -301,6 +292,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		if (page <= 0) {
 			currentPageIndex = 1;
 			navigator.gotoPreviousSpineSection(this);
+			//new GoToPageTask().execute(); TODO: must be called so we can go to the last page
 		} else if (page <= columnCount) {
 			goToPage(page, true);
 		} else {
@@ -450,6 +442,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 		public void setColumnWidth(int width) {
 			columnWidth = width;
+			Log.d(TAG, "ColumnCOunt:" + columnCount);
 		}
 	}
 
@@ -461,7 +454,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			if (navigationEvent.isResourceChanged()) {
 				readDocumentSpineEntry();
 				currentPageIndex = 1;
-				new GoToPageTask().execute();
 			} else if (navigationEvent.isSectionPosChanged()) {
 				// editorPane.setCaretPosition(navigationEvent.getCurrentSectionPos());
 			}

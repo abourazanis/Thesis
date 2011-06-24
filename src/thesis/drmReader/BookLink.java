@@ -7,6 +7,7 @@ import nl.siegmann.epublib.domain.Metadata;
 public class BookLink {
 	private Metadata meta;
 	private String id;
+	private String coverUrl;
 
 	public BookLink() {
 		this(null, null);
@@ -35,6 +36,14 @@ public class BookLink {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getCoverUrl() {
+		return coverUrl;
+	}
+
+	public void setCoverUrl(String coverUrl) {
+		this.coverUrl = coverUrl;
 	}
 
 	

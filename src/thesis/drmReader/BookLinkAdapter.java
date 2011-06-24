@@ -63,22 +63,22 @@ public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 		BookLink doc = documents.get(position);
 		if (doc != null) {
 			Metadata meta = doc.getMeta();
-			holder.imageView.setTag(doc.getId());
+			holder.imageView.setTag(doc.getCoverUrl());
 			if (meta.getCoverImage() != null) {
 				try {
 					Resource coverResource = meta.getCoverImage();
-					imageLoader.DisplayImage(doc.getId(),
+					imageLoader.DisplayImage(doc.getCoverUrl(),
 							coverResource.getInputStream(), holder.imageView);
 				} catch (Exception e) {
 				}
 			} else {
-				imageLoader.DisplayImage(doc.getId(), holder.imageView);
+				imageLoader.DisplayImage(doc.getCoverUrl(), holder.imageView);
 			}
 
 			if (!meta.getSubjects().isEmpty())
-				holder.textViewBottom.setText(meta.getSubjects().get(0));
+				holder.textViewBottom.setText(meta.getAuthors().get(0).toString());
 			if (!meta.getAuthors().isEmpty())
-				holder.textViewTop.setText(meta.getAuthors().get(0).toString());
+				holder.textViewTop.setText(meta.getFirstTitle());
 		}
 
 		return view;
