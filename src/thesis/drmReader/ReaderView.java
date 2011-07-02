@@ -2,9 +2,13 @@ package thesis.drmReader;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+
+import dalvik.system.PathClassLoader;
 
 import nl.siegmann.epublib.browsersupport.NavigationEvent;
 import nl.siegmann.epublib.browsersupport.NavigationEventListener;
@@ -12,11 +16,14 @@ import nl.siegmann.epublib.browsersupport.Navigator;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.epub.EpubReader;
+import nl.siegmann.epublib.service.DecryptService;
 import thesis.drmReader.NumberPicker.OnChangedListener;
 import thesis.drmReader.SimpleGestureFilter.SimpleGestureListener;
+import thesis.sec.Decrypter;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -46,6 +53,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private WebSettings webSettings;
 	private SimpleGestureFilter detector;
 	private ProgressDialog progressDialog;
+	private Decrypter decrypter;
 
 	private int displayWidth;
 	private int displayHeight;
@@ -74,19 +82,32 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		String docSrc = extras.getString("docSrc");
 		if (docSrc != null && docSrc != "") {
 			try {
-				FileInputStream epubStream = 
-						new FileInputStream(docSrc);
-				currentDoc = (new EpubReader()).readEpub(epubStream);
-				navigator = new Navigator(currentDoc); //here we have as current resource the cover
-				navigator.addNavigationEventListener(this);
-				navigator.gotoNextSpineSection(this); //next spine section. TODO:find a way to display the cover and delete this
+				FileInputStream epubStream = new FileInputStream(docSrc);
 
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
+				decrypter = new Decrypter(docSrc, this);
+
+				currentDoc = (new EpubReader(decrypter)).readEpub(epubStream);
+
+				navigator = new Navigator(currentDoc); // here we have as
+														// current resource the
+														// cover
+				navigator.addNavigationEventListener(this);
+				navigator.gotoNextSpineSection(this); // next spine section.
+														// TODO:find a way to
+														// display the cover and
+														// delete this
+
+			} catch (InvalidKeyException e) {
+
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
-	
 
 	private void setUpUI() {
 		webView = new WebView(this) {
@@ -292,7 +313,8 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		if (page <= 0) {
 			currentPageIndex = 1;
 			navigator.gotoPreviousSpineSection(this);
-			//new GoToPageTask().execute(); TODO: must be called so we can go to the last page
+			// new GoToPageTask().execute(); TODO: must be called so we can go
+			// to the last page
 		} else if (page <= columnCount) {
 			goToPage(page, true);
 		} else {
@@ -375,13 +397,15 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 			String htmlContent = "";
 			try {
-				Resource resource = activity.navigator.getCurrentResource();
-				
-				//InputStream in = resource.getInputStream();
+				Resource resource = activity.decrypter
+						.decrypt(activity.navigator.getCurrentResource());
 
-				final BufferedReader breader = new BufferedReader(resource.getReader());
-//				final BufferedReader breader = new BufferedReader(
-//						new InputStreamReader(in));
+				// InputStream in = resource.getInputStream();
+
+				final BufferedReader breader = new BufferedReader(
+						resource.getReader());
+				// final BufferedReader breader = new BufferedReader(
+				// new InputStreamReader(in));
 				StringBuilder b = new StringBuilder();
 				String line;
 
@@ -392,6 +416,8 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 				htmlContent = b.toString();
 
 			} catch (IOException e) {
+				Log.e(TAG, e.getMessage());
+			} catch (InvalidKeyException e) {
 				Log.e(TAG, e.getMessage());
 			}
 
@@ -449,7 +475,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	@Override
 	public void navigationPerformed(NavigationEvent navigationEvent) {
 		if (navigationEvent.isBookChanged()) {
-			//initBook(navigationEvent.getCurrentBook());
+			// initBook(navigationEvent.getCurrentBook());
 		} else {
 			if (navigationEvent.isResourceChanged()) {
 				readDocumentSpineEntry();

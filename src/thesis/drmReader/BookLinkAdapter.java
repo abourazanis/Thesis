@@ -1,11 +1,18 @@
 package thesis.drmReader;
 
+import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
+
+import dalvik.system.PathClassLoader;
 
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
+import nl.siegmann.epublib.service.DecryptService;
 import thesis.imageLazyLoader.ImageLoader;
+import thesis.sec.Decrypter;
 import android.content.Context;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,19 +73,26 @@ public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 			holder.imageView.setTag(doc.getCoverUrl());
 			if (meta.getCoverImage() != null) {
 				try {
-					Resource coverResource = meta.getCoverImage();
+					
+			        Decrypter decrypter = new Decrypter(doc.getId(), this.getContext());
+					
+					Resource coverResource = decrypter.decrypt(meta.getCoverImage());
+					
 					imageLoader.DisplayImage(doc.getCoverUrl(),
 							coverResource.getInputStream(), holder.imageView);
-				} catch (Exception e) {
+				} catch (InvalidKeyException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
 			} else {
 				imageLoader.DisplayImage(doc.getCoverUrl(), holder.imageView);
 			}
 
 			if (!meta.getSubjects().isEmpty())
-				holder.textViewBottom.setText(meta.getAuthors().get(0).toString());
-			if (!meta.getAuthors().isEmpty())
 				holder.textViewTop.setText(meta.getFirstTitle());
+			if (!meta.getAuthors().isEmpty())
+				holder.textViewBottom.setText(meta.getAuthors().get(0).toString());
 		}
 
 		return view;

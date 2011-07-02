@@ -5,13 +5,14 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import nl.siegmann.epublib.domain.Author;
+import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import thesis.drmReader.RestClient.RequestMethod;
+import thesis.sec.Decrypter;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ListActivity;
@@ -78,13 +79,13 @@ public class StoreList extends ListActivity {
 	private GetDocumentTask docTask;
 	private GetDocListTask docListTask;
 
-	private final static String URL = "http://10.0.2.2:8080/thesis.server/rest/peds";
-	private final static String GETDOCURL = "http://10.0.2.2:8080/thesis.server/rest/peds/";
-	private final static String TITLE = "name";
-	private final static String SUBJECT = "subject";
-	private final static String AUTHOR = "author";
+	private final static String URL = "http://10.0.2.2:8080/thesis.server/rest/epubs";
+	private final static String GETDOCURL = "http://10.0.2.2:8080/thesis.server/rest/epubs/";
+	private final static String TITLE = "titles";
+	private final static String SUBJECT = "subjects";
+	private final static String AUTHOR = "authors";
 	private final static String COVER = "coverPath";
-	private final static String DOCLINK = "pedInfo";
+	private final static String DOCLINK = "epubInfo";
 	private final static String DOCID = "id";
 
 	private final static int HTTP_RESPONSE_OK = 200;
@@ -184,7 +185,7 @@ public class StoreList extends ListActivity {
 		docDown = docLink.getId();
 		if (checkExternalMedia()) {
 			docTask = new GetDocumentTask(this);
-			docTask.execute(docDown);
+			docTask.execute(docDown,docLink.getMeta().getFirstTitle());
 		} else {
 			// message show
 		}
@@ -276,6 +277,8 @@ public class StoreList extends ListActivity {
 			int type = parser.getEventType();
 
 			BookLink currentItem = null;
+			ArrayList<String> titles = null;
+			ArrayList<String> subjects = null;
 			String name = "";
 			boolean done = false;
 			while (type != XmlPullParser.END_DOCUMENT && !done) {
@@ -286,19 +289,16 @@ public class StoreList extends ListActivity {
 				case XmlPullParser.START_TAG:
 					name = parser.getName();
 					if (name.equalsIgnoreCase(DOCLINK)) {
-
 						currentItem = new BookLink();
+						titles = new ArrayList<String>();
+						subjects = new ArrayList<String>();
 					} else if (currentItem != null) {
 						if (name.equalsIgnoreCase(TITLE)) {
-							ArrayList<String> titles = new ArrayList<String>();
 							titles.add(parser.nextText());
-							currentItem.getMeta().setTitles(titles);
 						} else if (name.equalsIgnoreCase(AUTHOR)) {
-							currentItem.getMeta().addAuthor(new Author(parser.nextText()));
+							//currentItem.getMeta().addAuthor(new Author(parser.nextText()));
 						} else if (name.equalsIgnoreCase(SUBJECT)) {
-							ArrayList<String> subjects = new ArrayList<String>();
 							subjects.add(parser.nextText());
-							currentItem.getMeta().setSubjects(subjects);
 						} else if (name.equalsIgnoreCase(COVER)) {
 							Resource cover = new Resource(parser.nextText());
 							currentItem.getMeta().setCoverImage(cover);
@@ -311,8 +311,13 @@ public class StoreList extends ListActivity {
 				case XmlPullParser.END_TAG:
 					name = parser.getName();
 					if (name.equalsIgnoreCase(DOCLINK) && currentItem != null) {
+						Metadata meta = new Metadata();
+						meta.setTitles(titles);
+						meta.setSubjects(subjects);
+						currentItem.setMeta(meta);
+						currentItem.setCoverUrl("http://naturescrusaders.files.wordpress.com/2009/02/gex_green-sea-turtle.jpg"); //TODO:remove.
 						docs.add(currentItem);
-					} else if (name.equalsIgnoreCase("pedInfoes")) {
+					} else if (name.equalsIgnoreCase("epubInfoes")) {
 						done = true;
 					}
 					break;
@@ -411,9 +416,11 @@ public class StoreList extends ListActivity {
 		protected Void doInBackground(String... params) {
 
 			RestClient client = new RestClient(GETDOCURL + params[0], true,
-					params[0] + ".ped");
+					params[1] + ".epub");
 			try {
-				client.Execute(RequestMethod.GET);
+				String key = new Decrypter(activity).getUniqueIdentifier();
+				client.AddParam("key", key);
+				client.Execute(RequestMethod.POST);
 				responseCode = client.getResponseCode();
 			} catch (Exception e) {
 				e.printStackTrace();

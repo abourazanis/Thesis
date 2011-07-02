@@ -2,11 +2,14 @@ package thesis.drmReader;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
-import java.util.zip.ZipInputStream;
 
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.epub.EpubReader;
+import thesis.sec.Decrypter;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -14,6 +17,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -26,20 +30,20 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ArchiveList extends ListActivity {
-	
+
 	private class ArchiveListState {
 		private ListDocumentsTask listTask;
 		private ArrayList<BookLink> docList;
-		private int dialogId = 999; //dummy value
-		
+		private int dialogId = 999; // dummy value
 
-		public void setDialogId(int id){
+		public void setDialogId(int id) {
 			dialogId = id;
 		}
-		
-		public int getDialogId(){
+
+		public int getDialogId() {
 			return dialogId;
 		}
 
@@ -59,8 +63,8 @@ public class ArchiveList extends ListActivity {
 			this.docList = docList;
 		}
 	}
-	
-	private final static String TAG ="ArchiveList";
+
+	private final static String TAG = "ArchiveList";
 
 	private ArrayList<BookLink> docList;
 	private BookLinkAdapter docAdapter;
@@ -69,8 +73,7 @@ public class ArchiveList extends ListActivity {
 	private int dialogId = 999;
 	private final static int LIST_DOCUMENTS = 0;
 	private MyListener listener = null;
-    private Boolean myListenerIsRegistered = false;
-
+	private Boolean myListenerIsRegistered = false;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -79,7 +82,7 @@ public class ArchiveList extends ListActivity {
 		setContentView(R.layout.doclist);
 
 		listener = new MyListener(this);
-		
+
 		docList = new ArrayList<BookLink>();
 		docAdapter = new BookLinkAdapter(this, R.layout.list_item, docList);
 		setListAdapter(docAdapter);
@@ -104,26 +107,27 @@ public class ArchiveList extends ListActivity {
 		}
 
 	}
-	
+
 	@Override
-    protected void onResume() {
-        super.onResume();
+	protected void onResume() {
+		super.onResume();
 
-        if (!myListenerIsRegistered) {
-            registerReceiver(listener, new IntentFilter("thesis.drmReader.POPULATE_LIST"));
-            myListenerIsRegistered = true;
-        }
-    }
+		if (!myListenerIsRegistered) {
+			registerReceiver(listener, new IntentFilter(
+					"thesis.drmReader.POPULATE_LIST"));
+			myListenerIsRegistered = true;
+		}
+	}
 
-    @Override
-    protected void onPause() {
-        super.onPause();
+	@Override
+	protected void onPause() {
+		super.onPause();
 
-//        if (myListenerIsRegistered) {
-//            unregisterReceiver(listener);
-//            myListenerIsRegistered = false;
-//        }
-    }
+		// if (myListenerIsRegistered) {
+		// unregisterReceiver(listener);
+		// myListenerIsRegistered = false;
+		// }
+	}
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
@@ -180,18 +184,17 @@ public class ArchiveList extends ListActivity {
 
 		return (state);
 	}
-	
+
 	@Override
-    public void onDestroy()
-    {
-        docAdapter.imageLoader.stopThread();
-        this.setListAdapter(null);
-        super.onDestroy();
-    }
+	public void onDestroy() {
+		docAdapter.imageLoader.stopThread();
+		this.setListAdapter(null);
+		super.onDestroy();
+	}
 
 	@Override
 	protected Dialog onCreateDialog(int id) {
-		
+
 		ProgressDialog progressDialog = null;
 		switch (id) {
 		case LIST_DOCUMENTS:
@@ -232,6 +235,8 @@ public class ArchiveList extends ListActivity {
 
 		ArchiveList activity = null;
 		boolean completed = false;
+		
+		ArrayList<String> invalidFiles = new ArrayList<String>();
 
 		ListDocumentsTask(ArchiveList activity) {
 			this.activity = activity;
@@ -257,17 +262,26 @@ public class ArchiveList extends ListActivity {
 						if (filename.endsWith(".epub")) {
 							String epubFilePath = sdDir.getAbsolutePath() + "/"
 									+ filename;
-							try{
+							try {
 								FileInputStream epubStream = new FileInputStream(
 										epubFilePath);
-							BookLink epubLink = new BookLink();
-							Metadata meta = (new EpubReader()).readEpubMetadata(epubStream);
-							epubLink.setMeta(meta);
-							epubLink.setId(epubFilePath);
-							if(meta.getCoverImage() != null)
-								epubLink.setCoverUrl(meta.getCoverImage().getHref());
-							docList.add(epubLink);
-							}catch(Exception e){
+								BookLink epubLink = new BookLink();
+								
+								Decrypter decrypter = new Decrypter(epubFilePath, activity);
+								Metadata meta = (new EpubReader(decrypter))
+										.readEpubMetadata(epubStream);
+								
+								epubLink.setMeta(meta);
+								epubLink.setId(epubFilePath);
+								if (meta.getCoverImage() != null)
+									epubLink.setCoverUrl(meta.getCoverImage()
+											.getHref());
+								docList.add(epubLink);
+							} catch (InvalidKeyException e) {
+								invalidFiles.add(filename);
+							} catch (FileNotFoundException e) {
+								Log.e(TAG, e.getMessage());
+							} catch (IOException e) {
 								Log.e(TAG, e.getMessage());
 							}
 						}
@@ -279,13 +293,16 @@ public class ArchiveList extends ListActivity {
 
 		@Override
 		protected void onPostExecute(Void result) {
+			if(!invalidFiles.isEmpty()){
+				Toast.makeText(activity, "Found epub(s) with name(s) " + invalidFiles.toString() + " who belongs to other device.", Toast.LENGTH_LONG).show();
+			}
 			completed = true;
 			if (docList != null && docList.size() > 0) {
 				docAdapter.notifyDataSetChanged();
 				for (int i = 0; i < docList.size(); i++)
 					docAdapter.add(docList.get(i));
 			}
-			if (activity.isDialogShowing){
+			if (activity.isDialogShowing) {
 				activity.dismissDialog(LIST_DOCUMENTS);
 				activity.dialogId = 999;
 			}
@@ -301,7 +318,7 @@ public class ArchiveList extends ListActivity {
 		void attach(ArchiveList activity) {
 			this.activity = activity;
 			if (completed) {
-				if (activity.isDialogShowing){
+				if (activity.isDialogShowing) {
 					activity.dismissDialog(LIST_DOCUMENTS);
 					activity.dialogId = 999;
 				}
@@ -309,25 +326,24 @@ public class ArchiveList extends ListActivity {
 		}
 
 	}
-	
+
 	protected class MyListener extends BroadcastReceiver {
 		private ArchiveList activity;
-		
-		MyListener(ArchiveList activity){
+
+		MyListener(ArchiveList activity) {
 			this.activity = activity;
 		}
 
-        @Override
-        public void onReceive(Context context, Intent intent) {
+		@Override
+		public void onReceive(Context context, Intent intent) {
 
-            // No need to check for the action unless the listener will
-            // will handle more than one - let's do it anyway
-            if (intent.getAction().equals("thesis.drmReader.POPULATE_LIST")) {
-            	listTask = new ListDocumentsTask(activity);
-    			listTask.execute((Void) null);
-            }
-        }
-    }
-
+			// No need to check for the action unless the listener will
+			// will handle more than one - let's do it anyway
+			if (intent.getAction().equals("thesis.drmReader.POPULATE_LIST")) {
+				listTask = new ListDocumentsTask(activity);
+				listTask.execute((Void) null);
+			}
+		}
+	}
 
 }
