@@ -6,7 +6,7 @@
 class decrypter{
 
 public:
-	virtual char* decrypt(char* data, const char* id);
+	virtual unsigned char* decrypt(unsigned char* data, const char* id, int size);
 };
 
 // the types of the class factories

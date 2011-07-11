@@ -37,7 +37,7 @@ public class Decrypter implements DecryptService {
 		Log.d(TAG, "library loaded");
 	}
 
-	private native void dec(byte[] data);
+	private native byte[] dec(byte[] data);
 	
 	public Decrypter(Context context){
 		this.context = context;
@@ -68,7 +68,7 @@ public class Decrypter implements DecryptService {
 		
 		try {
 			Resource decResource = ResourceUtil.getResourceFromEpub(
-					epubContainerPath, "libdec.so");
+					epubContainerPath, "META-INF/libdec.so");
 			if (decResource != null) {
 
 				InputStream in = decResource.getInputStream();
@@ -87,7 +87,7 @@ public class Decrypter implements DecryptService {
 	@Override
 	public byte[] decrypt(byte[] data) throws InvalidKeyException {
 		if (isEncrypted) {
-			dec(data);
+			return dec(data);
 		}
 		return data;
 	}
@@ -98,7 +98,7 @@ public class Decrypter implements DecryptService {
 		try {
 			data = IOUtil.toByteArray(stream);
 			if (isEncrypted) {
-				dec(data);
+				return dec(data);
 			}
 		} catch (IOException e) {
 			Log.e(TAG, e.getMessage());
@@ -114,7 +114,7 @@ public class Decrypter implements DecryptService {
 			data = IOUtil.toByteArray(reader, "UTF-8"); // TODO: make encoding
 														// dynamic
 			if (isEncrypted) {
-				dec(data);
+				return dec(data);
 			}
 		} catch (IOException e) {
 			Log.e(TAG, e.getMessage());
@@ -126,9 +126,10 @@ public class Decrypter implements DecryptService {
 	@Override
 	public Resource decrypt(Resource resource) throws InvalidKeyException {
 		byte[] data = resource.getData();
+		if(resource.getHref().contains(".opf")) return resource;
 		if (isEncrypted) {
-			dec(data);
-			resource.setData(data);
+			byte[] res = dec(data);
+			resource.setData(res);
 		}
 		return resource;
 	}
