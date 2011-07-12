@@ -4,15 +4,12 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 
-import dalvik.system.PathClassLoader;
-
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
-import nl.siegmann.epublib.service.DecryptService;
+import thesis.drmReader.data.EpubDbAdapter;
 import thesis.imageLazyLoader.ImageLoader;
 import thesis.sec.Decrypter;
 import android.content.Context;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -70,29 +67,40 @@ public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 		BookLink doc = documents.get(position);
 		if (doc != null) {
 			Metadata meta = doc.getMeta();
-			holder.imageView.setTag(doc.getCoverUrl());
 			if (meta.getCoverImage() != null) {
+				holder.imageView.setTag(doc.getId() + doc.getCoverUrl());
 				try {
-					
-			        Decrypter decrypter = new Decrypter(doc.getId(), this.getContext());
-					
-					Resource coverResource = decrypter.decrypt(meta.getCoverImage());
-					
-					imageLoader.DisplayImage(doc.getCoverUrl(),
-							coverResource.getInputStream(), holder.imageView);
+					EpubDbAdapter dbAdapter = new EpubDbAdapter(
+							this.getContext()).open();
+					String epubFilePath = dbAdapter
+							.getEpubLocation(doc.getId());
+					dbAdapter.close();
+					if (epubFilePath != null) {
+						Decrypter decrypter = new Decrypter(epubFilePath,
+								this.getContext());
+
+						Resource coverResource = decrypter.decrypt(meta
+								.getCoverImage());
+
+						imageLoader.DisplayImage(doc.getId() + doc.getCoverUrl(),
+								coverResource.getInputStream(),
+								holder.imageView);
+					}
 				} catch (InvalidKeyException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			} else {
+				holder.imageView.setTag(doc.getCoverUrl());
 				imageLoader.DisplayImage(doc.getCoverUrl(), holder.imageView);
 			}
 
 			if (!meta.getSubjects().isEmpty())
 				holder.textViewTop.setText(meta.getFirstTitle());
 			if (!meta.getAuthors().isEmpty())
-				holder.textViewBottom.setText(meta.getAuthors().get(0).toString());
+				holder.textViewBottom.setText(meta.getAuthors().get(0)
+						.toString());
 		}
 
 		return view;

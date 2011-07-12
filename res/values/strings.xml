@@ -11,4 +11,7 @@
     <string name="font_size_msg">Set the Font Size</string>
     <string name="tableOfContents">Table Of Contents</string>
     <string name="refresh">refresh</string>
+    <string name="importEpub">import epub</string>
+    <string name="up_one_level">..</string>
+    <string name="current_dir">.</string>
 </resources>

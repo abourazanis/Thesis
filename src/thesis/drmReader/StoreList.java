@@ -396,7 +396,7 @@ public class StoreList extends ListActivity {
 
 	}
 
-	class GetDocumentTask extends AsyncTask<String, String, Void> {
+	class GetDocumentTask extends AsyncTask<String, String, String> {
 
 		StoreList activity = null;
 		boolean completed = false;
@@ -413,7 +413,7 @@ public class StoreList extends ListActivity {
 		}
 
 		@Override
-		protected Void doInBackground(String... params) {
+		protected String doInBackground(String... params) {
 
 			RestClient client = new RestClient(GETDOCURL + params[0], true,
 					params[1] + ".epub");
@@ -425,7 +425,7 @@ public class StoreList extends ListActivity {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			return null;
+			return params[1] + ".epub";
 		}
 
 		protected void onProgressUpdate(String... progress) {
@@ -433,7 +433,7 @@ public class StoreList extends ListActivity {
 		}
 
 		@Override
-		protected void onPostExecute(Void result) {
+		protected void onPostExecute(String result) {
 			completed = true;
 			super.onPostExecute(result);
 			if (activity.isDialogShowing){
@@ -445,6 +445,7 @@ public class StoreList extends ListActivity {
 			}
 			
 			Intent i = new Intent();
+			i.putExtra("filepath", result);
 		    i.setAction("thesis.drmReader.POPULATE_LIST");
 		    sendBroadcast(i);
 

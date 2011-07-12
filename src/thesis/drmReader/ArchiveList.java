@@ -3,13 +3,20 @@ package thesis.drmReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.epub.EpubReader;
+import nl.siegmann.epublib.util.IOUtil;
+import thesis.drmReader.data.EpubDbAdapter;
+import thesis.drmReader.file.FileBrowser;
 import thesis.sec.Decrypter;
+import android.app.Activity;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -17,13 +24,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -72,6 +79,8 @@ public class ArchiveList extends ListActivity {
 	private boolean isDialogShowing = false;
 	private int dialogId = 999;
 	private final static int LIST_DOCUMENTS = 0;
+	private final static int IMPORT_DOCUMENT = 1;
+	private static final int IMPORT_REQUEST = 100;
 	private MyListener listener = null;
 	private Boolean myListenerIsRegistered = false;
 
@@ -127,6 +136,45 @@ public class ArchiveList extends ListActivity {
 		// unregisterReceiver(listener);
 		// myListenerIsRegistered = false;
 		// }
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.archive_list_menu, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.importEpub:
+			Intent i = new Intent(this, FileBrowser.class);
+			this.startActivityForResult(i, IMPORT_REQUEST);
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (resultCode == Activity.RESULT_OK) {
+			switch (requestCode) {
+			case IMPORT_REQUEST:
+				String epubFile = data.getStringExtra("filepath");
+				if (epubFile.endsWith(".epub")) {
+					new ImportEpubTask(this).execute(epubFile);
+				} else {
+					Toast.makeText(
+							this,
+							"The file " + epubFile
+									+ " has not a valid epub file extension",
+							Toast.LENGTH_LONG).show();
+				}
+				break;
+			}
+		}
 	}
 
 	@Override
@@ -206,6 +254,15 @@ public class ArchiveList extends ListActivity {
 			progressDialog.setCancelable(false);
 			progressDialog.show();
 			return progressDialog;
+		case IMPORT_DOCUMENT:
+			isDialogShowing = true;
+			dialogId = IMPORT_DOCUMENT;
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage("Importing epub in library..");
+			// progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+			return progressDialog;
 		default:
 			return null;
 		}
@@ -222,21 +279,132 @@ public class ArchiveList extends ListActivity {
 
 	private void deleteDoc(int position) {
 		BookLink doc = (BookLink) this.getListAdapter().getItem(position);
+
+		EpubDbAdapter dbAdapter = new EpubDbAdapter(this).open();
+		String filePath = dbAdapter.getEpubLocation(doc.getId());
+		dbAdapter.deleteEpub(doc);
+		dbAdapter.close();
 		docAdapter.remove(doc);
 
-		File fileToRm = new File(doc.getId());
-		if (fileToRm.exists())
-			fileToRm.delete();
+		if (filePath != null) {
+			File fileToRm = new File(filePath);
+			if (fileToRm.exists())
+				fileToRm.delete();
+		}
 
 		docAdapter.notifyDataSetChanged();
 	}
 
-	private class ListDocumentsTask extends AsyncTask<Void, Void, Void> {
+	private class ImportEpubTask extends AsyncTask<String, Void, BookLink> {
 
 		ArchiveList activity = null;
 		boolean completed = false;
-		
-		ArrayList<String> invalidFiles = new ArrayList<String>();
+		String invalidFile = null;
+
+		ImportEpubTask(ArchiveList activity) {
+			this.activity = activity;
+		}
+
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			activity.showDialog(IMPORT_DOCUMENT);
+		}
+
+		@Override
+		protected BookLink doInBackground(String... params) {
+			String epubFilePath = params[0];
+			try {
+				FileInputStream epubStream = new FileInputStream(epubFilePath);
+				BookLink epubLink = new BookLink();
+
+				Decrypter decrypter = new Decrypter(epubFilePath, activity);
+				Metadata meta = (new EpubReader(decrypter))
+						.readEpubMetadata(epubStream);
+
+				epubLink.setMeta(meta);
+				//epubLink.setId(epubFilePath);
+				if (meta.getCoverImage() != null)
+					epubLink.setCoverUrl(meta.getCoverImage().getHref());
+
+				File sdDir = Environment.getExternalStorageDirectory();
+				if (sdDir.exists() && sdDir.canRead()) {
+					File docDir = new File(sdDir.getAbsolutePath()
+							+ "/drmReader");
+					if (!docDir.exists())
+						docDir.mkdirs();
+					if (docDir.exists() && docDir.canRead()) {
+						String fileName = docDir + "/"
+								+ epubLink.getMeta().getFirstTitle() + ".epub";
+						IOUtil.copy(new FileInputStream(epubFilePath),
+								new FileOutputStream(fileName));
+						EpubDbAdapter dbAdapter = new EpubDbAdapter(activity)
+								.open();
+						long epubId = dbAdapter.createEpub(epubLink, fileName, meta.getCoverImage().getData());
+						dbAdapter.close();
+						
+						epubLink.setId(String.valueOf(epubId));
+						return epubLink;
+					}
+				}
+			} catch (InvalidKeyException e) {
+				invalidFile = epubFilePath;
+			} catch (FileNotFoundException e) {
+				Log.e(TAG, e.getMessage());
+			} catch (IOException e) {
+				Log.e(TAG, e.getMessage());
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(BookLink result) {
+			completed = true;
+			if (invalidFile != null) {
+				Toast.makeText(
+						activity,
+						"The epub with filename: " + invalidFile
+								+ " is drmed for another device.",
+						Toast.LENGTH_LONG).show();
+			}
+
+			if (result != null) {
+				docAdapter.add(result);
+				docAdapter.notifyDataSetChanged();
+			} else {
+				Toast.makeText(activity,
+						"Something went wrong during the import process",
+						Toast.LENGTH_LONG).show();
+			}
+
+			if (activity.isDialogShowing) {
+				activity.dismissDialog(IMPORT_DOCUMENT);
+				activity.dialogId = 999;
+			}
+			super.onPostExecute(result);
+		}
+
+		void detach() {
+			activity = null;
+		}
+
+		void attach(ArchiveList activity) {
+			this.activity = activity;
+			if (completed) {
+				if (activity.isDialogShowing) {
+					activity.dismissDialog(IMPORT_DOCUMENT);
+					activity.dialogId = 999;
+				}
+			}
+		}
+
+	}
+
+	private class ListDocumentsTask extends
+			AsyncTask<Void, Void, List<BookLink>> {
+
+		ArchiveList activity = null;
+		boolean completed = false;
 
 		ListDocumentsTask(ArchiveList activity) {
 			this.activity = activity;
@@ -249,58 +417,21 @@ public class ArchiveList extends ListActivity {
 		}
 
 		@Override
-		protected Void doInBackground(Void... params) {
-			File sdDir = Environment.getExternalStorageDirectory();
-			if (sdDir.exists() && sdDir.canRead()) {
-				// File docDir = new File(sdDir.getAbsolutePath() +
-				// "/drmReader");
-				File docDir = new File(sdDir.getAbsolutePath());
-				if (docDir.exists() && docDir.canRead()) {
-					docList = new ArrayList<BookLink>();
-					String[] fileList = docDir.list();
-					for (String filename : fileList) {
-						if (filename.endsWith(".epub")) {
-							String epubFilePath = sdDir.getAbsolutePath() + "/"
-									+ filename;
-							try {
-								FileInputStream epubStream = new FileInputStream(
-										epubFilePath);
-								BookLink epubLink = new BookLink();
-								
-								Decrypter decrypter = new Decrypter(epubFilePath, activity);
-								Metadata meta = (new EpubReader(decrypter))
-										.readEpubMetadata(epubStream);
-								
-								epubLink.setMeta(meta);
-								epubLink.setId(epubFilePath);
-								if (meta.getCoverImage() != null)
-									epubLink.setCoverUrl(meta.getCoverImage()
-											.getHref());
-								docList.add(epubLink);
-							} catch (InvalidKeyException e) {
-								invalidFiles.add(filename);
-							} catch (FileNotFoundException e) {
-								Log.e(TAG, e.getMessage());
-							} catch (IOException e) {
-								Log.e(TAG, e.getMessage());
-							}
-						}
-					}
-				}
-			}
-			return null;
+		protected List<BookLink> doInBackground(Void... params) {
+			EpubDbAdapter dbAdapter = new EpubDbAdapter(activity).open();
+			List<BookLink> list = dbAdapter.getEpubs();
+			dbAdapter.close();
+
+			return list;
 		}
 
 		@Override
-		protected void onPostExecute(Void result) {
-			if(!invalidFiles.isEmpty()){
-				Toast.makeText(activity, "Found epub(s) with name(s) " + invalidFiles.toString() + " who belongs to other device.", Toast.LENGTH_LONG).show();
-			}
+		protected void onPostExecute(List<BookLink> result) {
 			completed = true;
-			if (docList != null && docList.size() > 0) {
+			if (result != null && result.size() > 0) {
 				docAdapter.notifyDataSetChanged();
-				for (int i = 0; i < docList.size(); i++)
-					docAdapter.add(docList.get(i));
+				for (int i = 0; i < result.size(); i++)
+					docAdapter.add(result.get(i));
 			}
 			if (activity.isDialogShowing) {
 				activity.dismissDialog(LIST_DOCUMENTS);
@@ -340,8 +471,10 @@ public class ArchiveList extends ListActivity {
 			// No need to check for the action unless the listener will
 			// will handle more than one - let's do it anyway
 			if (intent.getAction().equals("thesis.drmReader.POPULATE_LIST")) {
-				listTask = new ListDocumentsTask(activity);
-				listTask.execute((Void) null);
+				File root = android.os.Environment
+						.getExternalStorageDirectory();
+				String epubFilePath =  root.getAbsolutePath() + "/" + intent.getStringExtra("filepath");
+				new ImportEpubTask(activity).execute(epubFilePath);
 			}
 		}
 	}
