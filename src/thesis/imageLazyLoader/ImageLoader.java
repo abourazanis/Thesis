@@ -8,12 +8,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Stack;
+import java.util.WeakHashMap;
 
 import thesis.drmReader.R;
-
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -24,9 +26,10 @@ public class ImageLoader {
 
 	// the simplest in-memory cache implementation. This should be replaced with
 	// something like SoftReference or BitmapOptions.inPurgeable(since 1.6)
-	private HashMap<String, Bitmap> cache = new HashMap<String, Bitmap>();
-
-	private File cacheDir;
+	MemoryCache memoryCache=new MemoryCache();
+    FileCache fileCache;
+    private Map<ImageView, String> imageViews=Collections.synchronizedMap(new WeakHashMap<ImageView, String>());
+    
 	private final int stub_id = R.drawable.icon;
 
 	public ImageLoader(Context context) {
@@ -35,51 +38,41 @@ public class ImageLoader {
 		// the UI performance
 		photoLoaderThread.setPriority(Thread.NORM_PRIORITY - 1);
 
-		// Find the dir to save cached images
-		if (android.os.Environment.getExternalStorageState().equals(
-				android.os.Environment.MEDIA_MOUNTED))
-			cacheDir = new File(
-					android.os.Environment.getExternalStorageDirectory(),
-					"coverDir");
-		else
-			cacheDir = context.getCacheDir();
-		if (!cacheDir.exists())
-			cacheDir.mkdirs();
+		fileCache=new FileCache(context);
 	}
 
-	public void DisplayImage(String url, InputStream stream, ImageView imageView) {
-		if (cache.containsKey(url))
-			imageView.setImageBitmap(cache.get(url));
-		else {
-			queuePhoto(url, stream, imageView);
-			imageView.setImageResource(stub_id);
-		}
+	public void DisplayImage(String url, InputStream stream,ImageView imageView) {
+		imageViews.put(imageView, url);
+        Bitmap bitmap=memoryCache.get(url);
+        if(bitmap!=null)
+            imageView.setImageBitmap(bitmap);
+        else
+        {
+            queuePhoto(url, stream,imageView);
+            imageView.setImageResource(stub_id);
+        } 
 	}
 
-	public void DisplayImage(String url, ImageView imageView) {
+	public void DisplayImage(String url,  ImageView imageView) {
 		DisplayImage(url, null, imageView);
 	}
 
 	private void queuePhoto(String url, InputStream stream, ImageView imageView) {
-		// This ImageView may be used for other images before. So there may be
-		// some old tasks in the queue. We need to discard them.
-		photosQueue.Clean(imageView);
-		PhotoToLoad p = new PhotoToLoad(url, stream, imageView);
-		synchronized (photosQueue.photosToLoad) {
-			photosQueue.photosToLoad.push(p);
-			photosQueue.photosToLoad.notifyAll();
-		}
-
-		// start thread if it's not started yet
-		if (photoLoaderThread.getState() == Thread.State.NEW)
-			photoLoaderThread.start();
+		//This ImageView may be used for other images before. So there may be some old tasks in the queue. We need to discard them.
+        photosQueue.Clean(imageView);
+        PhotoToLoad p=new PhotoToLoad(url, stream, imageView);
+        synchronized(photosQueue.photosToLoad){
+            photosQueue.photosToLoad.push(p);
+            photosQueue.photosToLoad.notifyAll();
+        }
+        
+        //start thread if it's not started yet
+        if(photoLoaderThread.getState()==Thread.State.NEW)
+            photoLoaderThread.start();
 	}
 
 	private Bitmap getBitmap(String url, InputStream stream) {
-		// I identify images by hashcode. Not a perfect solution, good for the
-		// demo.
-		String filename = String.valueOf(url.hashCode());
-		File f = new File(cacheDir, filename);
+		File f=fileCache.getFile(url);
 
 		// from SD cache
 		Bitmap b = decodeFile(f);
@@ -102,7 +95,13 @@ public class ImageLoader {
 		// from web
 		try {
 			Bitmap bitmap = null;
-			InputStream is = new URL(url).openStream();
+			URL imageUrl = new URL(url);
+
+			HttpURLConnection conn = (HttpURLConnection) imageUrl
+					.openConnection();
+			conn.setConnectTimeout(30000);
+			conn.setReadTimeout(30000);
+			InputStream is = conn.getInputStream();
 			OutputStream os = new FileOutputStream(f);
 			Utils.CopyStream(is, os);
 			os.close();
@@ -195,10 +194,10 @@ public class ImageLoader {
 						}
 						Bitmap bmp = getBitmap(photoToLoad.url,
 								photoToLoad.stream);
-						cache.put(photoToLoad.url, bmp);
-						Object tag = photoToLoad.imageView.getTag();
+						memoryCache.put(photoToLoad.url, bmp);
+						String tag=imageViews.get(photoToLoad.imageView);
 						if (tag != null
-								&& ((String) tag).equals(photoToLoad.url)) {
+								&& tag.equals(photoToLoad.url)) {
 							BitmapDisplayer bd = new BitmapDisplayer(bmp,
 									photoToLoad.imageView);
 							Activity a = (Activity) photoToLoad.imageView
@@ -236,13 +235,8 @@ public class ImageLoader {
 	}
 
 	public void clearCache() {
-		// clear memory cache
-		cache.clear();
-
-		// clear SD cache
-		File[] files = cacheDir.listFiles();
-		for (File f : files)
-			f.delete();
+		memoryCache.clear();
+        fileCache.clear();
 	}
 
 }

@@ -68,7 +68,7 @@ public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 		if (doc != null) {
 			Metadata meta = doc.getMeta();
 			if (meta.getCoverImage() != null) {
-				holder.imageView.setTag(doc.getId() + doc.getCoverUrl());
+				//holder.imageView.setTag(doc.getId() + doc.getCoverUrl());
 				try {
 					EpubDbAdapter dbAdapter = new EpubDbAdapter(
 							this.getContext()).open();
@@ -92,7 +92,7 @@ public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 					e.printStackTrace();
 				}
 			} else {
-				holder.imageView.setTag(doc.getCoverUrl());
+				//holder.imageView.setTag(doc.getCoverUrl());
 				imageLoader.DisplayImage(doc.getCoverUrl(), holder.imageView);
 			}
 
