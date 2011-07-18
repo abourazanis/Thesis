@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.WeakHashMap;
 
+import nl.siegmann.epublib.util.IOUtil;
+
 import thesis.drmReader.R;
 import android.app.Activity;
 import android.content.Context;
@@ -24,8 +26,6 @@ import android.widget.ImageView;
 
 public class ImageLoader {
 
-	// the simplest in-memory cache implementation. This should be replaced with
-	// something like SoftReference or BitmapOptions.inPurgeable(since 1.6)
 	MemoryCache memoryCache=new MemoryCache();
     FileCache fileCache;
     private Map<ImageView, String> imageViews=Collections.synchronizedMap(new WeakHashMap<ImageView, String>());
@@ -38,7 +38,7 @@ public class ImageLoader {
 		// the UI performance
 		photoLoaderThread.setPriority(Thread.NORM_PRIORITY - 1);
 
-		fileCache=new FileCache(context);
+		fileCache=new FileCache(context, "coverDir");
 	}
 
 	public void DisplayImage(String url, InputStream stream,ImageView imageView) {
@@ -84,7 +84,7 @@ public class ImageLoader {
 		try {
 			Bitmap c = null;
 			OutputStream ostream = new FileOutputStream(f);
-			Utils.CopyStream(stream, ostream);
+			IOUtil.copy(stream, ostream);
 			ostream.close();
 			c = decodeFile(f);
 			return c;
@@ -103,7 +103,7 @@ public class ImageLoader {
 			conn.setReadTimeout(30000);
 			InputStream is = conn.getInputStream();
 			OutputStream os = new FileOutputStream(f);
-			Utils.CopyStream(is, os);
+			IOUtil.copy(is, os);
 			os.close();
 			bitmap = decodeFile(f);
 			return bitmap;

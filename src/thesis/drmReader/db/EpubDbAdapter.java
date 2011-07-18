@@ -1,4 +1,4 @@
-package thesis.drmReader.data;
+package thesis.drmReader.db;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class EpubDbAdapter {
 		dbHelper.close();
 	}
 
-	public long createEpub(BookLink epub, String filePath, byte[] coverImage) {
+	public synchronized long createEpub(BookLink epub, String filePath, byte[] coverImage) {
 		Metadata meta = epub.getMeta();
 		ContentValues initialValues = createContentEpubValues(
 				epub.getCoverUrl(), meta.getSubjects().get(0), meta
@@ -67,7 +67,7 @@ public class EpubDbAdapter {
 	}
 	
 	
-	public void deleteEpub(BookLink epub){
+	public synchronized void deleteEpub(BookLink epub){
 		Metadata meta = epub.getMeta();
 		for (Author auth : meta.getAuthors()) {
 			long authID = createAuthor(auth.getFirstname(), auth.getLastname());
@@ -83,7 +83,7 @@ public class EpubDbAdapter {
 		
 	}
 
-	public long createAuthor(String firstname, String lastname) {
+	public synchronized long createAuthor(String firstname, String lastname) {
 		ContentValues values = new ContentValues();
 		values.put(EpubDbHelper.AuthorsTable.firstname, firstname);
 		values.put(EpubDbHelper.AuthorsTable.lastname, lastname);
@@ -107,7 +107,7 @@ public class EpubDbAdapter {
 
 	}
 
-	public long createPublisher(String firstname) {
+	public synchronized long createPublisher(String firstname) {
 		ContentValues values = new ContentValues();
 		values.put(EpubDbHelper.PublishersTable.firstname, firstname);
 		Cursor mCursor = database.query(EpubDbHelper.PublishersTable.tableName,

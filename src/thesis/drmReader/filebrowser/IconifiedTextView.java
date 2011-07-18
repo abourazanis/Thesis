@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 
-package thesis.drmReader.file;
+package thesis.drmReader.filebrowser;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;

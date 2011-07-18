@@ -13,8 +13,9 @@ import java.util.List;
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.epub.EpubReader;
 import nl.siegmann.epublib.util.IOUtil;
-import thesis.drmReader.data.EpubDbAdapter;
-import thesis.drmReader.file.FileBrowser;
+import thesis.drmReader.db.EpubDbAdapter;
+import thesis.drmReader.filebrowser.FileBrowser;
+import thesis.drmReader.reader.ReaderView;
 import thesis.sec.Decrypter;
 import android.app.Activity;
 import android.app.Dialog;
@@ -83,6 +84,7 @@ public class ArchiveList extends ListActivity {
 	private static final int IMPORT_REQUEST = 100;
 	private MyListener listener = null;
 	private Boolean myListenerIsRegistered = false;
+	ProgressDialog progressDialog = null;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -243,7 +245,6 @@ public class ArchiveList extends ListActivity {
 	@Override
 	protected Dialog onCreateDialog(int id) {
 
-		ProgressDialog progressDialog = null;
 		switch (id) {
 		case LIST_DOCUMENTS:
 			isDialogShowing = true;
@@ -259,8 +260,9 @@ public class ArchiveList extends ListActivity {
 			dialogId = IMPORT_DOCUMENT;
 			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage("Importing epub in library..");
-			// progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 			progressDialog.setCancelable(false);
+			progressDialog.setMax(100);
 			progressDialog.show();
 			return progressDialog;
 		default:
@@ -271,7 +273,12 @@ public class ArchiveList extends ListActivity {
 	private void readDoc(int position) {
 		BookLink doc = (BookLink) this.getListAdapter().getItem(position);
 		Intent intent = new Intent(this, ReaderView.class);
-		intent.putExtra("docSrc", doc.getId());
+		
+		EpubDbAdapter dbAdapter = new EpubDbAdapter(this).open();
+		String filepath = dbAdapter.getEpubLocation(doc.getId());
+		dbAdapter.close();
+		
+		intent.putExtra("docSrc", filepath);
 
 		startActivity(intent);
 
@@ -295,7 +302,7 @@ public class ArchiveList extends ListActivity {
 		docAdapter.notifyDataSetChanged();
 	}
 
-	private class ImportEpubTask extends AsyncTask<String, Void, BookLink> {
+	private class ImportEpubTask extends AsyncTask<String, Integer, BookLink> {
 
 		ArchiveList activity = null;
 		boolean completed = false;
@@ -309,6 +316,8 @@ public class ArchiveList extends ListActivity {
 		protected void onPreExecute() {
 			super.onPreExecute();
 			activity.showDialog(IMPORT_DOCUMENT);
+			publishProgress(0);
+			
 		}
 
 		@Override
@@ -319,8 +328,10 @@ public class ArchiveList extends ListActivity {
 				BookLink epubLink = new BookLink();
 
 				Decrypter decrypter = new Decrypter(epubFilePath, activity);
+				publishProgress(10);
 				Metadata meta = (new EpubReader(decrypter))
 						.readEpubMetadata(epubStream);
+				publishProgress(30);
 
 				epubLink.setMeta(meta);
 				//epubLink.setId(epubFilePath);
@@ -333,16 +344,19 @@ public class ArchiveList extends ListActivity {
 							+ "/drmReader");
 					if (!docDir.exists())
 						docDir.mkdirs();
+					publishProgress(50);
 					if (docDir.exists() && docDir.canRead()) {
 						String fileName = docDir + "/"
 								+ epubLink.getMeta().getFirstTitle() + ".epub";
+						publishProgress(70);
 						IOUtil.copy(new FileInputStream(epubFilePath),
 								new FileOutputStream(fileName));
+						publishProgress(90);
 						EpubDbAdapter dbAdapter = new EpubDbAdapter(activity)
 								.open();
 						long epubId = dbAdapter.createEpub(epubLink, fileName, meta.getCoverImage().getData());
 						dbAdapter.close();
-						
+						publishProgress(100);
 						epubLink.setId(String.valueOf(epubId));
 						return epubLink;
 					}
@@ -355,6 +369,11 @@ public class ArchiveList extends ListActivity {
 				Log.e(TAG, e.getMessage());
 			}
 			return null;
+		}
+		
+		@Override
+		protected void onProgressUpdate(Integer... progress) {
+			progressDialog.setProgress(progress[0]);
 		}
 
 		@Override

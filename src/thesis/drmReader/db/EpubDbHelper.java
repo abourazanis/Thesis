@@ -1,4 +1,4 @@
-package thesis.drmReader.data;
+package thesis.drmReader.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;

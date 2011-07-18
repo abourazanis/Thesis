@@ -22,7 +22,7 @@
     android:padding="10dip"
     >
     
-    <thesis.drmReader.NumberPicker
+    <thesis.drmReader.ui.NumberPicker
         android:id="@+id/num_picker"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" />

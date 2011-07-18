@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package thesis.drmReader;
+package thesis.drmReader.ui;
 
+import thesis.drmReader.R;
+import thesis.drmReader.R.id;
+import thesis.drmReader.R.layout;
 import android.content.Context;
 import android.os.Handler;
 import android.text.InputFilter;

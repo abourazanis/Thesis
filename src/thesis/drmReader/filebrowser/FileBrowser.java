@@ -1,4 +1,4 @@
-package thesis.drmReader.file;
+package thesis.drmReader.filebrowser;
 
 import java.io.File;
 import java.util.ArrayList;

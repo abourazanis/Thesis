@@ -1,6 +1,5 @@
-package thesis.drmReader;
+package thesis.drmReader.reader;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,7 +7,7 @@ import java.security.InvalidKeyException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import dalvik.system.PathClassLoader;
+import javax.xml.parsers.ParserConfigurationException;
 
 import nl.siegmann.epublib.browsersupport.NavigationEvent;
 import nl.siegmann.epublib.browsersupport.NavigationEventListener;
@@ -16,19 +15,24 @@ import nl.siegmann.epublib.browsersupport.Navigator;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.epub.EpubReader;
-import nl.siegmann.epublib.service.DecryptService;
-import thesis.drmReader.NumberPicker.OnChangedListener;
-import thesis.drmReader.SimpleGestureFilter.SimpleGestureListener;
+
+import org.xml.sax.SAXException;
+
+import thesis.drmReader.R;
+import thesis.drmReader.reader.SimpleGestureFilter.SimpleGestureListener;
+import thesis.drmReader.ui.NumberPicker;
+import thesis.drmReader.ui.NumberPicker.OnChangedListener;
+import thesis.drmReader.util.ReaderUtils;
 import thesis.sec.Decrypter;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -46,8 +50,10 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private static final int FONT_SIZE_MENU = 1;
 	private static final String TAG = "ReaderView";
 	private static final int SCREEN_TAP_SIZE = 30;
-	private static final int SCREEN_PADDING = 0;
 	private static final int MAX_FONT_SIZE = 20;
+
+	private static final int SCREEN_WIDTH_CORRECTION = 5;
+	private static final int SCREEN_HEIGHT_CORRECTION = 2;
 
 	private WebView webView;
 	private WebSettings webSettings;
@@ -57,8 +63,9 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 	private int displayWidth;
 	private int displayHeight;
-	private int columnWidth;
 	private int columnCount;
+	private int columnWidth;
+	private String cache;
 
 	private ReentrantLock lock = new ReentrantLock();
 	private Condition condition = lock.newCondition();
@@ -73,6 +80,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		super.onCreate(savedInstanceState);
 
 		setUpUI();
+		cache = this.getCacheDir().getAbsolutePath() + "/readertmp";
 
 		Bundle extras = getIntent().getExtras();
 		if (extras == null) {
@@ -92,11 +100,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 														// current resource the
 														// cover
 				navigator.addNavigationEventListener(this);
-				navigator.gotoNextSpineSection(this); // next spine section.
-														// TODO:find a way to
-														// display the cover and
-														// delete this
-
+				readDocumentSpineEntry();
 			} catch (InvalidKeyException e) {
 
 			} catch (FileNotFoundException e) {
@@ -125,50 +129,29 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		setContentView(webView);
 		detector = new SimpleGestureFilter(this, this);
 
-		Display display = getWindowManager().getDefaultDisplay();
-		displayWidth = display.getWidth();
-		displayHeight = display.getHeight();
+		DisplayMetrics metrics = new DisplayMetrics();
+		getWindowManager().getDefaultDisplay().getMetrics(metrics);
+		displayWidth = metrics.widthPixels + SCREEN_WIDTH_CORRECTION;
+		displayHeight = metrics.heightPixels + SCREEN_HEIGHT_CORRECTION;
 
 		webView.addJavascriptInterface(new JSInterface(), "interface");
 		webView.setWebViewClient(new WebViewClient() {
+
 			public void onPageFinished(WebView view, String url) {
 
 				// Column Count is just the number of 'screens' of text. Add one
 				// for partial 'screens'
-				columnCount = (view.getContentHeight() / view.getHeight()) + 1;
+				// columnCount = (view.getScrollX() / displayWidth) + 1;
 
 				// css3 column module & webkit transition setup
 				String js = "var d = document.getElementsByTagName('body')[0];"
-
-				+ "var rWidth = d.style.width;" + "d.style.width='"
-						+ (displayWidth - SCREEN_PADDING * 2)
-						+ "px';"
-						+ "var pageCount = Math.ceil(d.offsetHeight/"
-						+ displayHeight
-						+ ");"
-						+ "d.style.width=rWidth;"
-						+ "d.style.height='"
-						+ displayHeight
-						+ "px';"
-						+ "d.style['padding-left']='"
-						+ SCREEN_PADDING
-						+ "px';"
-						+ "d.style['padding-right']='"
-						+ SCREEN_PADDING
-						+ "px';"
-
-						+ "d.style['-webkit-transition-property'] = '-webkit-transform';"
-						+ "d.style['-webkit-transform-origin'] = \"0 0\";"
-						+ "d.style['-webkit-transition-duration'] = '700ms';"
-						+ "d.style['-webkit-transition-timing-function'] = 'linear';"
-
-						+ "d.style.WebkitColumnCount= pageCount;"
-						+ "d.style.WebkitColumnWidth='"
-						+ (displayWidth - SCREEN_PADDING * 2) + "px';"
-
+						+ "var width = d.scrollWidth;"
+						+ "var pageCount = Math.ceil(d.scrollWidth/"
+						+ displayWidth + ");"
 						+ "window.interface.setColumnCount(pageCount);"
 						+ "window.interface.setColumnWidth(screen.width);";
 				webView.loadUrl("javascript:(function(){" + js + "})()");
+				webView.scrollTo(0, 0);
 			}
 		});
 
@@ -186,6 +169,28 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		webSettings.setJavaScriptEnabled(true);
 		webView.setVerticalScrollBarEnabled(false);
 		webView.setHorizontalScrollBarEnabled(false);
+	}
+
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent event) {
+		if (event.getAction() == KeyEvent.ACTION_UP) {
+			int keyCode = event.getKeyCode();
+
+			switch (keyCode) {
+			case KeyEvent.KEYCODE_DPAD_CENTER:
+				navigate(currentPageIndex + 1);
+				break;
+
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+				navigate(currentPageIndex - 1);
+				break;
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+				navigate(currentPageIndex + 1);
+				break;
+			}
+
+		}
+		return super.dispatchKeyEvent(event);
 	}
 
 	@Override
@@ -310,6 +315,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	}
 
 	private void navigate(int page) {
+
 		if (page <= 0) {
 			currentPageIndex = 1;
 			navigator.gotoPreviousSpineSection(this);
@@ -320,6 +326,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		} else {
 			navigator.gotoNextSpineSection(this);
 		}
+
 	}
 
 	private void readDocumentSpineEntry() {
@@ -332,15 +339,16 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 	private void goToPage(int pageIndex, boolean withCSS3) {
 
-		int moveWidth = (pageIndex - 1) * columnWidth;
-
+		int moveWidth = (int) (pageIndex - 1) * columnWidth;
+		
+		Log.d(TAG, "width: " + moveWidth);
 		String js = "";
 		if (withCSS3) {
-			js = "var d = document.getElementsByTagName('body')[0];"
-					+ "d.style['-webkit-transform'] = 'translate3d(-"
-					+ moveWidth + "px,0px,0px)';";
+			js = "var d = document.getElementById('wrapper');"
+					+ "d.style['-webkit-transform'] = 'translateX(-"
+					+ moveWidth + "px)';";
 		} else {
-			js = "var d = document.getElementsByTagName('body')[0];"
+			js = "var d = document.getElementById('wrap');"
 					+ "window.scrollTo( " + moveWidth + ", 0) ;";
 		}
 
@@ -399,26 +407,20 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			try {
 				Resource resource = activity.decrypter
 						.decrypt(activity.navigator.getCurrentResource());
-
-				// InputStream in = resource.getInputStream();
-
-				final BufferedReader breader = new BufferedReader(
-						resource.getReader());
-				// final BufferedReader breader = new BufferedReader(
-				// new InputStreamReader(in));
-				StringBuilder b = new StringBuilder();
-				String line;
-
-				while ((line = breader.readLine()) != null) {
-					b.append(line);
-				}
-				breader.close();
-				htmlContent = b.toString();
+				htmlContent = ReaderUtils.getModifiedDocument(
+						activity.navigator.getBook(), resource, displayWidth,
+						displayHeight, cache);
 
 			} catch (IOException e) {
 				Log.e(TAG, e.getMessage());
 			} catch (InvalidKeyException e) {
 				Log.e(TAG, e.getMessage());
+			} catch (SAXException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ParserConfigurationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 
 			return htmlContent;
@@ -432,7 +434,9 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			webView.clearHistory();
 			webView.clearFormData();
 			webView.clearCache(true);
-			webView.loadData(result, "text/html", "utf-8");
+			webView.loadDataWithBaseURL(null, result, null, "utf-8", null);
+			// problem: http://code.google.com/p/android/issues/detail?id=1733
+			// webView.loadData(result, "text/html", "utf-8");
 
 			progressDialog.dismiss();
 
@@ -454,22 +458,25 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		}
 
 		public void setColumnCount(int count) {
-			lock.lock();
+			columnCount = count;
+			isPageLoaded = true;
 
-			try {
-				columnCount = count;
-				isPageLoaded = true;
-				condition.signalAll();
-			} finally {
-				lock.unlock();
-			}
+			// lock.lock();
+			//
+			// try {
+			// columnCount = count;
+			// isPageLoaded = true;
+			// condition.signalAll();
+			// } finally {
+			// lock.unlock();
+			// }
 
 		}
 
 		public void setColumnWidth(int width) {
 			columnWidth = width;
-			Log.d(TAG, "ColumnCOunt:" + columnCount);
 		}
+
 	}
 
 	@Override

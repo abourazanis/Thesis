@@ -11,6 +11,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.zip.ZipException;
 
+import thesis.drmReader.util.Utils;
+
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.service.DecryptService;
 import nl.siegmann.epublib.util.IOUtil;
@@ -46,16 +48,7 @@ public class Decrypter implements DecryptService {
 	public Decrypter(String epubContainerPath, Object obj) {
 		this.epubContainerPath = epubContainerPath;
 		this.context = (Context)obj;
-
-		PackageManager pm = context.getPackageManager();
-		String dataPath = null;
-		try {
-			dataPath = pm.getApplicationInfo(context.getPackageName(), 0).dataDir;
-		} catch (NameNotFoundException e) {
-			Log.e(TAG, e.getMessage());
-		}
-
-		this.packagePath = dataPath;
+		this.packagePath = Utils.getPackagePath(context);
 		copyLib();
 	}
 

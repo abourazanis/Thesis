@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
-import thesis.drmReader.data.EpubDbAdapter;
+import thesis.drmReader.db.EpubDbAdapter;
 import thesis.imageLazyLoader.ImageLoader;
 import thesis.sec.Decrypter;
 import android.content.Context;

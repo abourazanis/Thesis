@@ -1,4 +1,4 @@
-package thesis.drmReader;
+package thesis.drmReader.reader;
 
 import android.app.Activity;
 import android.view.GestureDetector;
