@@ -4,8 +4,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.InvalidKeyException;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -14,6 +14,7 @@ import nl.siegmann.epublib.browsersupport.NavigationEventListener;
 import nl.siegmann.epublib.browsersupport.Navigator;
 import nl.siegmann.epublib.domain.Book;
 import nl.siegmann.epublib.domain.Resource;
+import nl.siegmann.epublib.domain.TOCReference;
 import nl.siegmann.epublib.epub.EpubReader;
 
 import org.xml.sax.SAXException;
@@ -27,9 +28,12 @@ import thesis.sec.Decrypter;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -37,14 +41,32 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.webkit.WebSettings.ZoomDensity;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.TextView;
 
 public class ReaderView extends Activity implements SimpleGestureListener,
 		OnChangedListener, NavigationEventListener {
+
+	static class DisplayInfo {
+		static float density;
+		static int densityDpi;
+		static int widthPixels;
+		static int heightPixels;
+		static float scaledDensity;
+		static float xdpi;
+		static float ydpi;
+	}
 
 	private static final int TOC_MENU = 0;
 	private static final int FONT_SIZE_MENU = 1;
@@ -52,28 +74,44 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private static final int SCREEN_TAP_SIZE = 30;
 	private static final int MAX_FONT_SIZE = 20;
 
-	private static final int SCREEN_WIDTH_CORRECTION = 5;
-	private static final int SCREEN_HEIGHT_CORRECTION = 2;
+	private static final int HANDLER_JS_CURPAGE = 1;
+	private static final int HANDLER_JS_TOTPAGE = 2;
+	private static final int HANDLER_SEEKBAR_CHANGING = 3;
+	private static final int HANDLER_SEEKBAR_CHANGED = 4;
+	private static final int HANDLER_SHOW_OSD = 5;
+	private static final int HANDLER_HIDE_OSD = 6;
+
+	private static final int TOC_LIST = 100;
 
 	private WebView webView;
 	private WebSettings webSettings;
+
+	private TextView tvChapter;
+	private TextView tvPages;
+
+	// OSD layer
+	private FrameLayout flOSD;
+	private TextView tvInfo;
+	private TextView tvPageTitle;
+	private TextView tvPageNumber;
+	private SeekBar sbPages;
+
+	private boolean isOsdOn = false;
+
 	private SimpleGestureFilter detector;
 	private ProgressDialog progressDialog;
 	private Decrypter decrypter;
 
 	private int displayWidth;
 	private int displayHeight;
-	private int columnCount;
-	private int columnWidth;
 	private String cache;
 
-	private ReentrantLock lock = new ReentrantLock();
-	private Condition condition = lock.newCondition();
-	private boolean isPageLoaded = false;
+	private int mCurPage = 1;
+	private float mCurPercentage = 0.0f;
+	private int mMaxPage = 1;
 
 	private Book currentDoc;
 	private Navigator navigator;
-	private int currentPageIndex = 0;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -101,57 +139,83 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 														// cover
 				navigator.addNavigationEventListener(this);
 				readDocumentSpineEntry();
+				String author = null;
+				if (currentDoc.getMetadata().getAuthors().size() > 0)
+					author = currentDoc.getMetadata().getAuthors().get(0)
+							.toString();
+				tvInfo.setText(currentDoc.getTitle() + " "
+						+ (author == null ? " " : "(" + author + ")"));
 			} catch (InvalidKeyException e) {
 
 			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
 
 	private void setUpUI() {
-		webView = new WebView(this) {
-			@Override
-			public boolean onTouchEvent(MotionEvent ev) {
-				return false;
-			}
+		// webView = new WebView(this) {
+		// @Override
+		// public boolean onTouchEvent(MotionEvent ev) {
+		// return false;
+		// }
+		//
+		// @Override
+		// public boolean dispatchTouchEvent(MotionEvent ev) {
+		// return false;
+		// }
+		// };
 
-			@Override
-			public boolean dispatchTouchEvent(MotionEvent ev) {
-				return false;
-			}
-		};
+		setContentView(R.layout.reader);
 
-		setContentView(webView);
+		webView = (WebView) findViewById(R.id.webView);
+		// tail infos (chapter, pages)
+		tvChapter = (TextView) findViewById(R.id.tvChapter);
+		tvPages = (TextView) findViewById(R.id.tvPages);
+
+		// frame layout for OSD
+		flOSD = (FrameLayout) findViewById(R.id.flOSD);
+		tvInfo = (TextView) findViewById(R.id.tvInfo);
+		tvPageTitle = (TextView) findViewById(R.id.tvPageTitle);
+		tvPageNumber = (TextView) findViewById(R.id.tvPageNumber);
+		sbPages = (SeekBar) findViewById(R.id.sbPages);
+
 		detector = new SimpleGestureFilter(this, this);
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
-		displayWidth = metrics.widthPixels + SCREEN_WIDTH_CORRECTION;
-		displayHeight = metrics.heightPixels + SCREEN_HEIGHT_CORRECTION;
+		DisplayInfo.density = metrics.density;
+		DisplayInfo.densityDpi = metrics.densityDpi;
+		DisplayInfo.widthPixels = metrics.widthPixels;
+		DisplayInfo.heightPixels = metrics.heightPixels;
+		DisplayInfo.scaledDensity = metrics.scaledDensity;
+		DisplayInfo.xdpi = metrics.xdpi;
+		DisplayInfo.ydpi = metrics.ydpi;
+		displayWidth = metrics.widthPixels;
+		displayHeight = metrics.heightPixels;
 
-		webView.addJavascriptInterface(new JSInterface(), "interface");
+		webView.addJavascriptInterface(new AndroidBridge(), "android");
 		webView.setWebViewClient(new WebViewClient() {
 
 			public void onPageFinished(WebView view, String url) {
+				Log.i(TAG, "[CALLBACK_WV] void onPageFinished(view:" + view
+						+ ", url:" + url + ")");
 
-				// Column Count is just the number of 'screens' of text. Add one
-				// for partial 'screens'
-				// columnCount = (view.getScrollX() / displayWidth) + 1;
+				if (!ReaderUtils.isCoverResource(
+						navigator.getCurrentResource(), currentDoc)) {
+					// calc total page number
+					// also, move to certain location
+					webView.loadUrl("javascript:getTotalPageNum()");
+					Log.d(TAG, "javascript:getTotalPageNum()");
 
-				// css3 column module & webkit transition setup
-				String js = "var d = document.getElementsByTagName('body')[0];"
-						+ "var width = d.scrollWidth;"
-						+ "var pageCount = Math.ceil(d.scrollWidth/"
-						+ displayWidth + ");"
-						+ "window.interface.setColumnCount(pageCount);"
-						+ "window.interface.setColumnWidth(screen.width);";
-				webView.loadUrl("javascript:(function(){" + js + "})()");
-				webView.scrollTo(0, 0);
+					// move to certain location
+					webView.loadUrl("javascript:openPageByPercentage("
+							+ mCurPercentage + ")");
+					Log.d(TAG, "javascript:openPageByPercentage("
+							+ mCurPercentage + ")");
+				}
 			}
 		});
 
@@ -165,10 +229,58 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 		});
 
+		webView.setSelected(true);
+		webView.setClickable(false);
 		webSettings = webView.getSettings();
 		webSettings.setJavaScriptEnabled(true);
+		webSettings
+				.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
+		webSettings.setDefaultZoom(this.getZoomDensity());
+		webSettings.setDefaultFontSize(12);
 		webView.setVerticalScrollBarEnabled(false);
 		webView.setHorizontalScrollBarEnabled(false);
+
+		// SeekBar change listener
+		sbPages.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+			}
+
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				int progress = seekBar.getProgress();
+				webView.loadUrl("javascript:openPageByNum(" + (progress + 1)
+						+ ")");
+				handler.sendMessage(Message.obtain(handler,
+						HANDLER_SEEKBAR_CHANGED, (Integer) (progress + 1)));
+			}
+
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress,
+					boolean fromUser) {
+				handler.sendMessage(Message.obtain(handler,
+						HANDLER_SEEKBAR_CHANGING, (Integer) (progress + 1)));
+			}
+		});
+	}
+
+	/**
+	 * Calc zoom density
+	 * 
+	 * @return
+	 */
+	private ZoomDensity getZoomDensity() {
+		ZoomDensity zd;
+		if (DisplayInfo.densityDpi == 240) {
+			zd = WebSettings.ZoomDensity.FAR;
+		} else if (DisplayInfo.densityDpi == 160) {
+			zd = WebSettings.ZoomDensity.MEDIUM;
+		} else if (DisplayInfo.densityDpi == 120) {
+			zd = WebSettings.ZoomDensity.CLOSE;
+		} else {
+			zd = WebSettings.ZoomDensity.MEDIUM;
+		}
+		return zd;
 	}
 
 	@Override
@@ -178,14 +290,22 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_CENTER:
-				navigate(currentPageIndex + 1);
+				navigate(mCurPage + 1);
 				break;
 
 			case KeyEvent.KEYCODE_DPAD_LEFT:
-				navigate(currentPageIndex - 1);
+				navigate(mCurPage - 1);
 				break;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
-				navigate(currentPageIndex + 1);
+				navigate(mCurPage + 1);
+				break;
+
+			case KeyEvent.KEYCODE_BACK:
+				if (isOsdOn) {
+					flOSD.setVisibility(View.GONE);
+					isOsdOn = false;
+					return false;
+				}
 				break;
 			}
 
@@ -198,7 +318,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		super.onConfigurationChanged(newConfig);
 		// setUpUI();
 		webView.reload();
-		currentPageIndex = 1;
+		mCurPage = 1;
 	}
 
 	@Override
@@ -212,16 +332,52 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.toc:
-			showDialog(TOC_MENU);
+			Log.d(TAG,"TOC Selected");
+			Iterator<TOCReference> it = currentDoc.getTableOfContents()
+					.getTocReferences().iterator();
+			ArrayList<String> titles = new ArrayList<String>();
+			while (it.hasNext()) {
+				TOCReference ref = (TOCReference) it.next();
+				titles.add(ref.getTitle());
+			}
+			Intent i = new Intent(this, TOCList.class);
+			i.putStringArrayListExtra("titles", titles);
+			i.putExtra("currentTitle", ReaderUtils.getChapterName(currentDoc,
+					navigator.getCurrentResource()));
+			this.startActivityForResult(i, TOC_LIST);
 			return true;
 		case R.id.font_size:
+			Log.d(TAG,"Font Selected");
 			showDialog(FONT_SIZE_MENU);
 			return true;
 		case R.id.home:
 			super.onBackPressed();
 			return true;
 		default:
+			Log.d(TAG,"Default Selected");
 			return super.onOptionsItemSelected(item);
+		}
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (resultCode == Activity.RESULT_OK) {
+			switch (requestCode) {
+			case TOC_LIST:
+				String title = data.getStringExtra("chapter");
+				if (title != null) {
+					String chapterId = null;
+					Iterator<TOCReference> it = currentDoc.getTableOfContents()
+							.getTocReferences().iterator();
+					while (it.hasNext()) {
+						TOCReference ref = (TOCReference) it.next();
+						if (ref.getTitle().equalsIgnoreCase(title))
+							chapterId = ref.getResourceId();
+					}
+					navigator.gotoResourceId(chapterId, this);
+				}
+				break;
+			}
 		}
 	}
 
@@ -229,25 +385,22 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	protected Dialog onCreateDialog(int id) {
 
 		switch (id) {
-		// TODO: implement new listview.See TableOfContentsPane for how to
-		// process TOC
-		// case TOC_MENU:
-		// List<String> tocTitles = currentDoc.getTOC().getItemTitles();
-		// final CharSequence[] items = tocTitles
-		// .toArray(new CharSequence[tocTitles.size()]);
-		//
-		// AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		// builder.setTitle(R.string.tableOfContents);
-		// builder.setSingleChoiceItems(items, -1,
-		// new DialogInterface.OnClickListener() {
-		// public void onClick(DialogInterface dialog, int item) {
-		// currentPageIndex = 1;
-		// readDocumentTOCEntry(item);
-		// dialog.dismiss();
-		// }
-		// });
-		// AlertDialog alert = builder.create();
-		// return alert;
+		case TOC_MENU:
+
+			// CharSequence[] titlesArray = titles.toArray(new
+			// CharSequence[titles.size()]);
+			// AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			// builder.setTitle(R.string.tableOfContents);
+			// builder.setSingleChoiceItems(titlesArray, -1,
+			// new DialogInterface.OnClickListener() {
+			// public void onClick(DialogInterface dialog, int item) {
+			// mCurPage = 1;
+			// readDocumentSpineEntry();
+			// dialog.dismiss();
+			// }
+			// });
+			// AlertDialog alert = builder.create();
+			// return alert;
 		case FONT_SIZE_MENU:
 			Dialog fontDialog = new Dialog(this);
 
@@ -272,7 +425,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 	@Override
 	protected void onPrepareDialog(int id, Dialog dialog) {
-		// TODO Auto-generated method stub
 		super.onPrepareDialog(id, dialog);
 	}
 
@@ -287,10 +439,10 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		switch (direction) {
 
 		case SimpleGestureFilter.SWIPE_RIGHT:
-			navigate(currentPageIndex - 1);
+			navigate(mCurPage - 1);
 			break;
 		case SimpleGestureFilter.SWIPE_LEFT:
-			navigate(currentPageIndex + 1);
+			navigate(mCurPage + 1);
 			break;
 		case SimpleGestureFilter.SWIPE_DOWN:
 			break;
@@ -307,9 +459,19 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		float sub = displayWidth - x;
 
 		if (sub < SCREEN_TAP_SIZE) {
-			navigate(currentPageIndex + 1);
+			navigate(mCurPage + 1);
 		} else if (sub > (displayWidth - SCREEN_TAP_SIZE)) {
-			navigate(currentPageIndex - 1);
+			navigate(mCurPage - 1);
+		}// toggle OSD
+		else {
+			if (flOSD.getVisibility() == View.GONE) {
+				if (!ReaderUtils.isCoverResource(
+						navigator.getCurrentResource(), currentDoc))
+					handler.sendMessage(Message.obtain(handler,
+							HANDLER_SHOW_OSD));
+			} else {
+				handler.sendMessage(Message.obtain(handler, HANDLER_HIDE_OSD));
+			}
 		}
 
 	}
@@ -317,11 +479,10 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private void navigate(int page) {
 
 		if (page <= 0) {
-			currentPageIndex = 1;
+			mCurPage = 1;
 			navigator.gotoPreviousSpineSection(this);
-			// new GoToPageTask().execute(); TODO: must be called so we can go
-			// to the last page
-		} else if (page <= columnCount) {
+			webView.loadUrl("javascript:openPageByPercentage(1.0)");
+		} else if (page <= mMaxPage) {
 			goToPage(page, true);
 		} else {
 			navigator.gotoNextSpineSection(this);
@@ -339,57 +500,19 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 	private void goToPage(int pageIndex, boolean withCSS3) {
 
-		int moveWidth = (int) (pageIndex - 1) * columnWidth;
-		
-		Log.d(TAG, "width: " + moveWidth);
-		String js = "";
-		if (withCSS3) {
-			js = "var d = document.getElementById('wrapper');"
-					+ "d.style['-webkit-transform'] = 'translateX(-"
-					+ moveWidth + "px)';";
-		} else {
-			js = "var d = document.getElementById('wrap');"
-					+ "window.scrollTo( " + moveWidth + ", 0) ;";
-		}
+		if (mCurPage < pageIndex)
+			webView.loadUrl("javascript:nextPage()");
+		else
+			webView.loadUrl("javascript:prevPage()");
 
-		webView.loadUrl("javascript:(function(){" + js + "})()");
-		currentPageIndex = pageIndex;
+		mCurPage = pageIndex;
 	}
 
-	// for NumberPicker
+	// for NumberPicker (font size change)
 	@Override
 	public void onChanged(NumberPicker picker, int oldVal, int newVal) {
 		webSettings.setDefaultFontSize(newVal);
-		webView.invalidate();
-		webView.reload();
-		navigate(currentPageIndex);
-	}
-
-	private class GoToPageTask extends AsyncTask<Void, Void, Void> {
-
-		@Override
-		protected Void doInBackground(Void... params) {
-
-			lock.lock();
-			try {
-				while (isPageLoaded == false) {
-					condition.await();
-				}
-
-				isPageLoaded = true;
-			} catch (Exception e) {
-				Log.e(TAG, e.getMessage());
-			} finally {
-				lock.unlock();
-			}
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			goToPage(columnCount, false);
-			super.onPostExecute(result);
-		}
+		readDocumentSpineEntry();
 	}
 
 	private class LoadDocTask extends AsyncTask<Void, Void, String> {
@@ -416,10 +539,8 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			} catch (InvalidKeyException e) {
 				Log.e(TAG, e.getMessage());
 			} catch (SAXException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (ParserConfigurationException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -428,8 +549,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 		@Override
 		protected void onPostExecute(String result) {
-
-			isPageLoaded = false;
 
 			webView.clearHistory();
 			webView.clearFormData();
@@ -453,30 +572,22 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 	}
 
-	final class JSInterface {
-		JSInterface() {
+	/**
+	 * Bridge for Javascript call
+	 */
+	class AndroidBridge {
+		public void setCurPageLocation(final int page, final float percentage)
+				throws InterruptedException {
+			mCurPage = page;
+			mCurPercentage = percentage;
+			handler.sendMessage(Message.obtain(handler, HANDLER_JS_CURPAGE,
+					(Integer) mCurPage));
 		}
 
-		public void setColumnCount(int count) {
-			columnCount = count;
-			isPageLoaded = true;
-
-			// lock.lock();
-			//
-			// try {
-			// columnCount = count;
-			// isPageLoaded = true;
-			// condition.signalAll();
-			// } finally {
-			// lock.unlock();
-			// }
-
+		public void setTotalPageNum(final int page) {
+			mMaxPage = page;
+			handler.sendMessage(Message.obtain(handler, HANDLER_JS_TOTPAGE));
 		}
-
-		public void setColumnWidth(int width) {
-			columnWidth = width;
-		}
-
 	}
 
 	@Override
@@ -486,7 +597,8 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		} else {
 			if (navigationEvent.isResourceChanged()) {
 				readDocumentSpineEntry();
-				currentPageIndex = 1;
+				mCurPage = 1;
+				mCurPercentage = 0.0f;
 			} else if (navigationEvent.isSectionPosChanged()) {
 				// editorPane.setCaretPosition(navigationEvent.getCurrentSectionPos());
 			}
@@ -497,5 +609,78 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			// }
 		}
 
+	}
+
+	/**
+	 * Handler for epub viewer
+	 */
+	private Handler handler = new Handler() {
+		Animation animation;
+
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case HANDLER_JS_CURPAGE:
+				refreshOSD((Integer) msg.obj);
+				refreshPage();
+				sbPages.setProgress((Integer) msg.obj - 1);
+				break;
+
+			case HANDLER_JS_TOTPAGE:
+				sbPages.setMax(mMaxPage - 1);
+				break;
+
+			case HANDLER_SEEKBAR_CHANGING:
+				refreshOSD((Integer) msg.obj);
+				break;
+
+			case HANDLER_SEEKBAR_CHANGED:
+				refreshPage();
+				break;
+
+			case HANDLER_SHOW_OSD:
+				flOSD.setVisibility(View.VISIBLE);
+				isOsdOn = true;
+
+				animation = AnimationUtils.loadAnimation(
+						getApplicationContext(), R.anim.fadein);
+				flOSD.startAnimation(animation);
+				break;
+
+			case HANDLER_HIDE_OSD:
+				animation = AnimationUtils.loadAnimation(
+						getApplicationContext(), R.anim.fadeout);
+				flOSD.startAnimation(animation);
+
+				flOSD.setVisibility(View.GONE);
+				isOsdOn = false;
+				break;
+			}
+		}
+	};
+
+	/**
+	 * Refreshes OSD
+	 * 
+	 * @param curPage
+	 */
+	private void refreshOSD(int curPage) {
+		tvPageTitle.setText(ReaderUtils.getChapterName(currentDoc,
+				navigator.getCurrentResource()));
+		tvPageNumber.setText(String.valueOf(curPage) + "/"
+				+ String.valueOf(mMaxPage));
+	}
+
+	/**
+	 * Refreshes Page info.
+	 * 
+	 * @param curPage
+	 */
+	private void refreshPage() {
+		tvChapter.setText(ReaderUtils.getChapterName(currentDoc,
+				navigator.getCurrentResource()));
+		Log.d(TAG, "Tit: " + navigator.getCurrentResource().getTitle());
+		tvPages.setText(String.valueOf(mCurPage) + "/"
+				+ String.valueOf(mMaxPage));
 	}
 }

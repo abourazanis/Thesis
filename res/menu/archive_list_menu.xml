@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-	<item 
+<menu
+  xmlns:android="http://schemas.android.com/apk/res/android">
+  <item 
 		android:id="@+id/importEpub" 
 		android:title="@string/importEpub"
-		android:icon="@drawable/ic_menu_import">
+		android:icon="@drawable/ic_menu_import"
+		android:showAsAction="ifRoom">
 	</item>
+    
 </menu>
