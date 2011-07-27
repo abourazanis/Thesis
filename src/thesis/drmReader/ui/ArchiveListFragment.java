@@ -7,14 +7,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.epub.EpubReader;
 import nl.siegmann.epublib.util.IOUtil;
-
-import thesis.drmReader.BookLink;
-import thesis.drmReader.BookLinkAdapter;
 import thesis.drmReader.R;
 import thesis.drmReader.db.EpubDbAdapter;
 import thesis.drmReader.filebrowser.FileBrowser;
@@ -22,14 +20,22 @@ import thesis.drmReader.reader.ReaderView;
 import thesis.drmReader.ui.QuickAction.ActionItem;
 import thesis.drmReader.ui.QuickAction.QuickAction;
 import thesis.drmReader.util.Constants;
+import thesis.drmReader.util.EpubLoader;
+import thesis.drmReader.util.IncrementalAsyncTaskLoaderCallbacks;
 import thesis.sec.Decrypter;
 import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v4.app.FragmentActivity;
+import android.os.Handler;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.ListFragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
@@ -40,15 +46,21 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public class ArchiveListFragment extends ListFragment {
+public class ArchiveListFragment extends ListFragment implements
+		IncrementalAsyncTaskLoaderCallbacks<Integer, List<BookLink>> {
 
-	private final static String TAG = "ArchiveListFragment";
+	private final static String TAG = ArchiveListFragment.class
+			.getCanonicalName();
 	private ArrayList<BookLink> docList;
 	private BookLinkAdapter docAdapter;
-	private ListDocumentsTask listTask;
 	private QuickAction quickAction;
 	private int longClickedItemPos = -1;
-	private DialogHandler dialogHandler;
+
+	private boolean firstRun = true;
+	private boolean firstImport = true;
+	EpubDbAdapter dbAdapter;
+	Bundle args;
+	private final Handler mHandler = new Handler();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -56,15 +68,13 @@ public class ArchiveListFragment extends ListFragment {
 	}
 
 	@Override
-	public void onAttach(FragmentActivity activity) {
-		super.onAttach(activity);
-		try {
-			dialogHandler = (DialogHandler) activity;
-		} catch (ClassCastException e) {
-			throw new ClassCastException(activity.toString()
-					+ " must implement DialogHandler");
-		}
+	public void onDetach() {
+		super.onDetach();
+	}
 
+	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
 	}
 
 	@Override
@@ -73,11 +83,17 @@ public class ArchiveListFragment extends ListFragment {
 
 		registerForContextMenu(getListView());
 		setHasOptionsMenu(true);
+		setRetainInstance(true);// save the state across screen configuration
+								// changes
 
-		docList = new ArrayList<BookLink>();
-		docAdapter = new BookLinkAdapter(this.getActivity(),
-				R.layout.list_item, docList);
-		setListAdapter(docAdapter);
+		if (firstRun) {
+			docList = new ArrayList<BookLink>();
+			docAdapter = new BookLinkAdapter(this.getActivity(),
+					R.layout.list_item, docList);
+			setListAdapter(docAdapter);
+			dbAdapter = new EpubDbAdapter(this.getActivity()
+					.getApplicationContext());
+		}
 
 		initQuickAction();
 
@@ -93,9 +109,24 @@ public class ArchiveListFragment extends ListFragment {
 
 		});
 
-		listTask = new ListDocumentsTask(this.getActivity());
-		listTask.execute((Void) null);
+		// call this to re-connect with an existing
+		// loader (after screen configuration changes for e.g!)
+		LoaderManager lm = getLoaderManager();
+		if (lm.getLoader(Constants.LIST_DOCUMENTS) != null) {
+			Log.d(TAG,"list document loader founded");
+			lm.initLoader(Constants.LIST_DOCUMENTS, null, this);
+		}
 
+		if (lm.getLoader(Constants.IMPORT_DOCUMENT) != null) {
+			Log.d(TAG,"import document loader founded");
+			lm.initLoader(Constants.IMPORT_DOCUMENT, args, this);
+		}
+
+		if (firstRun) {
+			firstRun = false;
+			getLoaderManager().initLoader(Constants.LIST_DOCUMENTS, null, this);
+			showDialog(Constants.LIST_DOCUMENTS);
+		}
 	}
 
 	@Override
@@ -135,6 +166,7 @@ public class ArchiveListFragment extends ListFragment {
 			switch (requestCode) {
 			case Constants.IMPORT_REQUEST:
 				String epubFile = data.getStringExtra("filepath");
+				Log.d(TAG,"came back from filebrowser - execute importEpub");
 				importEpub(epubFile);
 				break;
 			}
@@ -206,146 +238,13 @@ public class ArchiveListFragment extends ListFragment {
 		docAdapter.notifyDataSetChanged();
 	}
 
-	private class ListDocumentsTask extends
-			AsyncTask<Void, Void, List<BookLink>> {
-
-		Activity activity = null;
-
-		ListDocumentsTask(Activity activity) {
-			this.activity = activity;
-		}
-
-		@Override
-		protected void onPreExecute() {
-			super.onPreExecute();
-			dialogHandler.displayDialog(Constants.LIST_DOCUMENTS);
-		}
-
-		@Override
-		protected List<BookLink> doInBackground(Void... params) {
-			EpubDbAdapter dbAdapter = new EpubDbAdapter(activity).open();
-			List<BookLink> list = dbAdapter.getEpubs();
-			dbAdapter.close();
-			return list;
-		}
-
-		@Override
-		protected void onPostExecute(List<BookLink> result) {
-			if (result != null && result.size() > 0) {
-				docAdapter.notifyDataSetChanged();
-				for (int i = 0; i < result.size(); i++)
-					docAdapter.add(result.get(i));
-			}
-			dialogHandler.hideDialog(Constants.LIST_DOCUMENTS);
-
-			docAdapter.notifyDataSetChanged();
-			super.onPostExecute(result);
-		}
-
-	}
-
-	private class ImportEpubTask extends AsyncTask<String, Integer, BookLink> {
-
-		Activity activity = null;
-		boolean completed = false;
-		String invalidFile = null;
-
-		ImportEpubTask(Activity activity) {
-			this.activity = activity;
-		}
-
-		@Override
-		protected void onPreExecute() {
-			super.onPreExecute();
-			dialogHandler.displayDialog(Constants.IMPORT_DOCUMENT);
-			publishProgress(0);
-
-		}
-
-		@Override
-		protected BookLink doInBackground(String... params) {
-			String epubFilePath = params[0];
-			try {
-				FileInputStream epubStream = new FileInputStream(epubFilePath);
-				BookLink epubLink = new BookLink();
-
-				Decrypter decrypter = new Decrypter(epubFilePath, activity);
-				publishProgress(10);
-				Metadata meta = (new EpubReader(decrypter))
-						.readEpubMetadata(epubStream);
-				publishProgress(30);
-
-				epubLink.setMeta(meta);
-				if (meta.getCoverImage() != null)
-					epubLink.setCoverUrl(meta.getCoverImage().getHref());
-
-				File sdDir = Environment.getExternalStorageDirectory();
-				if (sdDir.exists() && sdDir.canRead()) {
-					File docDir = new File(sdDir.getAbsolutePath()
-							+ "/drmReader");
-					if (!docDir.exists())
-						docDir.mkdirs();
-					publishProgress(50);
-					if (docDir.exists() && docDir.canRead()) {
-						String fileName = docDir + "/"
-								+ epubLink.getMeta().getFirstTitle() + ".epub";
-						publishProgress(70);
-						IOUtil.copy(new FileInputStream(epubFilePath),
-								new FileOutputStream(fileName));
-						publishProgress(90);
-						EpubDbAdapter dbAdapter = new EpubDbAdapter(activity)
-								.open();
-						long epubId = dbAdapter.createEpub(epubLink, fileName,
-								meta.getCoverImage().getData());
-						dbAdapter.close();
-						publishProgress(100);
-						epubLink.setId(String.valueOf(epubId));
-						return epubLink;
-					}
-				}
-			} catch (InvalidKeyException e) {
-				invalidFile = epubFilePath;
-			} catch (FileNotFoundException e) {
-				Log.e(TAG, e.getMessage());
-			} catch (IOException e) {
-				Log.e(TAG, e.getMessage());
-			}
-			return null;
-		}
-
-		@Override
-		protected void onProgressUpdate(Integer... progress) {
-			dialogHandler.setDialogProgress(progress[0]);
-		}
-
-		@Override
-		protected void onPostExecute(BookLink result) {
-			completed = true;
-			if (invalidFile != null) {
-				Toast.makeText(
-						activity,
-						"The epub with filename: " + invalidFile
-								+ " is drmed for another device.",
-						Toast.LENGTH_LONG).show();
-			}
-
-			if (result != null) {
-				addListItem(result);
-			} else {
-				Toast.makeText(activity,
-						"Something went wrong during the import process",
-						Toast.LENGTH_LONG).show();
-			}
-
-			dialogHandler.hideDialog(Constants.IMPORT_DOCUMENT);
-			super.onPostExecute(result);
-		}
-
-	}
-
 	public void importEpub(String epubFile) {
 		if (epubFile.endsWith(".epub")) {
-			new ImportEpubTask(this.getActivity()).execute(epubFile);
+			args = new Bundle();
+			args.putString("file", epubFile);
+				this.getLoaderManager().restartLoader(
+						Constants.IMPORT_DOCUMENT, args, this);
+			showDialog(Constants.IMPORT_DOCUMENT);
 		} else {
 			Toast.makeText(
 					this.getActivity(),
@@ -363,4 +262,243 @@ public class ArchiveListFragment extends ListFragment {
 		}
 	}
 
+	protected void restartLoading() {
+		showDialog(Constants.LIST_DOCUMENTS);
+		docAdapter.clear();
+		docAdapter.notifyDataSetChanged();
+		getListView().invalidateViews();
+
+		// --------- the other magic lines ----------
+		// call restart because we want the background work to be executed
+		// again
+		Log.d(TAG, "restartLoading(): re-starting loader");
+		getLoaderManager().restartLoader(Constants.LIST_DOCUMENTS, null, this);
+		// --------- end the other magic lines --------
+	}
+
+	// methods for loader callbacks
+	@Override
+	public Loader<List<BookLink>> onCreateLoader(int id, Bundle args) {
+		EpubLoader loader = null;
+		switch (id) {
+		case Constants.IMPORT_DOCUMENT: {
+			Log.d(TAG,"onCreateLoader import document");
+			loader = new EpubLoader(getActivity(), this, args.getString("file")) {
+				@Override
+				public List<BookLink> loadInBackground() {
+					Log.d(TAG,"loadInBackground import document loader");
+					String epubFilePath = file;
+					try {
+						FileInputStream epubStream = new FileInputStream(
+								epubFilePath);
+						BookLink epubLink = new BookLink();
+
+						Decrypter decrypter = new Decrypter(epubFilePath,
+								this.getContext());
+						publishProgress(10);
+						Metadata meta = (new EpubReader(decrypter))
+								.readEpubMetadata(epubStream);
+						publishProgress(30);
+
+						epubLink.setMeta(meta);
+						if (meta.getCoverImage() != null)
+							epubLink.setCoverUrl(meta.getCoverImage().getHref());
+
+						File sdDir = Environment.getExternalStorageDirectory();
+						if (sdDir.exists() && sdDir.canRead()) {
+							File docDir = new File(sdDir.getAbsolutePath()
+									+ "/drmReader");
+							if (!docDir.exists())
+								docDir.mkdirs();
+							publishProgress(50);
+							if (docDir.exists() && docDir.canRead()) {
+								String fileName = docDir + "/"
+										+ epubLink.getMeta().getFirstTitle()
+										+ ".epub";
+								publishProgress(70);
+								IOUtil.copy(new FileInputStream(epubFilePath),
+										new FileOutputStream(fileName));
+								publishProgress(90);
+								EpubDbAdapter dbAdapter = new EpubDbAdapter(
+										this.getContext()).open();
+								long epubId = dbAdapter.createEpub(epubLink,
+										fileName, meta.getCoverImage()
+												.getData());
+								dbAdapter.close();
+								publishProgress(100);
+								epubLink.setId(String.valueOf(epubId));
+								ArrayList<BookLink> res = new ArrayList<BookLink>();
+								res.add(epubLink);
+								return res;
+							}
+						}
+					} catch (InvalidKeyException e) {
+						// invalid file
+					} catch (FileNotFoundException e) {
+						Log.e(TAG, e.getMessage());
+					} catch (IOException e) {
+						Log.e(TAG, e.getMessage());
+					}
+					
+					return null;
+				}
+			};
+
+		}
+			break;
+		case Constants.LIST_DOCUMENTS: {
+			loader = new EpubLoader(getActivity(), this, args == null ? null
+					: args.getString("file")) {
+				@Override
+				public List<BookLink> loadInBackground() {
+					dbAdapter.open();
+					List<BookLink> list = dbAdapter.getEpubs();
+					dbAdapter.close();
+					
+					return list;
+				}
+			};
+		}
+			break;
+		}
+
+		// somehow the AsyncTaskLoader doesn't want to start its job without
+		// calling this method
+		loader.forceLoad();
+
+		return loader;
+	}
+
+	@Override
+	public void onLoaderReset(Loader<List<BookLink>> loader) {
+	}
+
+	@Override
+	public void onLoadFinished(Loader<List<BookLink>> loader,
+			List<BookLink> docs) {
+		Log.d(TAG,"onLoadFinished");
+		switch (loader.getId()) {
+		case Constants.LIST_DOCUMENTS: {
+			if (docs != null && docs.size() > 0) {
+				docList.clear();
+				Iterator<BookLink> it = docs.iterator();
+				while (it.hasNext()) {
+					docList.add(it.next());
+				}
+				docAdapter.notifyDataSetChanged();
+			}
+			Log.d(TAG,"hide dialog " + loader.getId());
+			hideDialog();
+		}
+			break;
+		case Constants.IMPORT_DOCUMENT: {
+			Log.d(TAG,"importEpub loader onLoadFinished");
+			Log.d(TAG,"hide dialog " + loader.getId());
+			hideDialog();
+			// XXX: make it to add all list items
+			if (docs != null && docs.size() > 0) {
+				addListItem(docs.get(0));
+				Log.d(TAG,"importEpub loader onLoadFinished item Added");
+			} else {
+				Toast.makeText(loader.getContext(),
+						"Something went wrong during the import process",
+						Toast.LENGTH_LONG).show();
+			}
+		}
+			break;
+		}
+
+	}
+
+	@Override
+	public void onPreExecute() {
+
+	}
+
+	@Override
+	public void onProgressUpdate(Integer progress) {
+		Log.d(TAG,"importEpub onProgressUpdate");
+		setProgress(progress);
+	}
+
+	@Override
+	public void onPostExecute(List<BookLink> result) {
+
+	}
+	
+	private void setProgress(int progress) {
+		MyDialog dialog = (MyDialog) this.getSupportFragmentManager()
+				.findFragmentByTag("dialog");
+		if (dialog != null)
+			dialog.setProgress(progress);
+	}
+	
+	private void showDialog(int id) {
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		Fragment prev = getSupportFragmentManager().findFragmentByTag("dialog");
+		if (prev != null) {
+			ft.remove(prev);
+		}
+		
+		DialogFragment newFragment = MyDialog.newInstance(id);
+		//newFragment.show(ft, "dialog"); // Can not perform this action after onSaveInstanceState
+		ft.add(newFragment, "dialog").commitAllowingStateLoss();
+    }
+	
+	private void hideDialog() {
+		mHandler.post(new Runnable() {
+
+			@Override
+			public void run() {
+				FragmentTransaction ft = getSupportFragmentManager()
+						.beginTransaction();
+				Fragment prev = getSupportFragmentManager().findFragmentByTag(
+						"dialog");
+				if (prev != null) {
+					ft.remove(prev).commit();
+				}
+			}
+		});
+	}
+	
+	
+	public static class MyDialog extends DialogFragment {
+		
+		public static MyDialog newInstance(int id) {
+			MyDialog frag = new MyDialog();
+            Bundle args = new Bundle();
+            args.putInt("id", id);
+            frag.setArguments(args);
+            return frag;
+        }
+		
+		 @Override
+	        public Dialog onCreateDialog(Bundle savedInstanceState) {
+	            int id = getArguments().getInt("id");
+	            ProgressDialog dialog = null;
+	            switch(id){
+	            case Constants.LIST_DOCUMENTS:
+	            	dialog = new ProgressDialog(this.getActivity());
+					dialog.setMessage("Populating list..");
+					dialog.setCancelable(false);
+					break;
+	            case Constants.IMPORT_DOCUMENT:
+	            	dialog = new ProgressDialog(this.getActivity());
+					dialog.setMessage("Importing epub in library..");
+					dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+					dialog.setCancelable(false);
+					dialog.setMax(100);
+					break;
+	            }
+	            return dialog;
+		 }
+		 
+		 public void setProgress(int progress) {
+			 ((ProgressDialog)this.getDialog()).setProgress(progress);
+			}
+	}
+	
+	
+	
+	
 }

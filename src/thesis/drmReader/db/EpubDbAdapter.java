@@ -9,7 +9,7 @@ import nl.siegmann.epublib.domain.Author;
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.util.ResourceUtil;
-import thesis.drmReader.BookLink;
+import thesis.drmReader.ui.BookLink;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -33,6 +33,8 @@ public class EpubDbAdapter {
 	}
 
 	public void close() {
+		if(database.isOpen())
+			database.close();
 		dbHelper.close();
 	}
 

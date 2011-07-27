@@ -1,4 +1,4 @@
-package thesis.drmReader;
+package thesis.drmReader.ui;
 
 import nl.siegmann.epublib.domain.Metadata;
 

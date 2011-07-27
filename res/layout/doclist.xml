@@ -17,4 +17,5 @@
   		android:layout_height="fill_parent"
   		android:text="@string/list_no_items">
   			</TextView>
+  	
 </LinearLayout>

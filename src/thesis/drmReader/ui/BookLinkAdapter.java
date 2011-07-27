@@ -1,4 +1,4 @@
-package thesis.drmReader;
+package thesis.drmReader.ui;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -6,6 +6,9 @@ import java.util.ArrayList;
 
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
+import thesis.drmReader.R;
+import thesis.drmReader.R.id;
+import thesis.drmReader.R.layout;
 import thesis.drmReader.db.EpubDbAdapter;
 import thesis.imageLazyLoader.ImageLoader;
 import thesis.sec.Decrypter;

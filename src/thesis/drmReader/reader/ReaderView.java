@@ -68,7 +68,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		static float ydpi;
 	}
 
-	private static final int TOC_MENU = 0;
 	private static final int FONT_SIZE_MENU = 1;
 	private static final String TAG = "ReaderView";
 	private static final int SCREEN_TAP_SIZE = 30;
@@ -114,6 +113,15 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private Navigator navigator;
 
 	@Override
+	public void onSaveInstanceState(Bundle savedInstanceState) {
+
+		savedInstanceState.putString("curResourceHref",navigator.getCurrentResource().getHref());
+		savedInstanceState.putInt("curPage",mCurPage);
+		savedInstanceState.putFloat("curPercentage", mCurPercentage);
+		super.onSaveInstanceState(savedInstanceState);
+	}
+	
+	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
@@ -138,6 +146,12 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 														// current resource the
 														// cover
 				navigator.addNavigationEventListener(this);
+				if(savedInstanceState != null){
+					mCurPage = savedInstanceState.getInt("curPage");
+					mCurPercentage = savedInstanceState.getFloat("curPercentage");
+					navigator.gotoResource(savedInstanceState.getString("curResourceHref"), this);
+				}
+				
 				readDocumentSpineEntry();
 				String author = null;
 				if (currentDoc.getMetadata().getAuthors().size() > 0)
@@ -155,20 +169,12 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	private void setUpUI() {
-		// webView = new WebView(this) {
-		// @Override
-		// public boolean onTouchEvent(MotionEvent ev) {
-		// return false;
-		// }
-		//
-		// @Override
-		// public boolean dispatchTouchEvent(MotionEvent ev) {
-		// return false;
-		// }
-		// };
-
 		setContentView(R.layout.reader);
+		
+		if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB )
+			getActionBar().hide();
 
 		webView = (WebView) findViewById(R.id.webView);
 		// tail infos (chapter, pages)
@@ -314,14 +320,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	}
 
 	@Override
-	public void onConfigurationChanged(Configuration newConfig) {
-		super.onConfigurationChanged(newConfig);
-		// setUpUI();
-		webView.reload();
-		mCurPage = 1;
-	}
-
-	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.read_options_menu, menu);
@@ -385,22 +383,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	protected Dialog onCreateDialog(int id) {
 
 		switch (id) {
-		case TOC_MENU:
-
-			// CharSequence[] titlesArray = titles.toArray(new
-			// CharSequence[titles.size()]);
-			// AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			// builder.setTitle(R.string.tableOfContents);
-			// builder.setSingleChoiceItems(titlesArray, -1,
-			// new DialogInterface.OnClickListener() {
-			// public void onClick(DialogInterface dialog, int item) {
-			// mCurPage = 1;
-			// readDocumentSpineEntry();
-			// dialog.dismiss();
-			// }
-			// });
-			// AlertDialog alert = builder.create();
-			// return alert;
 		case FONT_SIZE_MENU:
 			Dialog fontDialog = new Dialog(this);
 
