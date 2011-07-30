@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, drmReader!</string>
+    <string name="hello"><big>Welcome to DrmReader</big>\n\nLooks like you have no epubs added, yet. Click <b>Import Epub</b> in the menu to add some from your sdcard.\n\nOr if you want to <b>download</b> an epub, click <b>Web Store</b> in the menu.</string>
     <string name="app_name">DrmReader</string>
     <string name="list_no_items">No documents to display</string>
     <string name="read_item">Read</string>
@@ -14,4 +14,36 @@
     <string name="importEpub">import epub</string>
     <string name="up_one_level">..</string>
     <string name="current_dir">.</string>
+    <string name="cancel">cancel</string>
+    <string name="search_hint">Search epubs</string>
+	<string name="search_title">Matching epubs</string>
+	<string name="search_description">Epubs</string>
+	<string name="no_results">Could not find any results. Try complete words.</string>
+    <string name="sort">Sort by</string>
+    <string name="webStore">Web store</string>
+    <string name="import_inbackground">Importing...</string>
+    <string name="import_inprogress">There is an import in progress. Wait for it to complete, then try again.</string>
+    <string name="import_success">file(s) imported successfully</string>
+    <string name="import_error_title">Import error</string>
+    <string name="import_error_msg">Some error happened during the import process.Please try again.</string>
+    <string name="import_file_error_title">Import file error</string>
+    <string name="import_file_error_msg">File not found</string>
+    <string name="import_invalid_key_title">Import key error</string>
+    <string name="import_invalid_key_msg">Invalid decryption key.It belongs to another device.</string>
+    
+    
+    <!--  Sorting -->
+    <string-array name="epub_sortingData">
+		<item>alphabetic asc</item>
+		<item>alphabetic desc</item>
+		<item>author asc</item>
+		<item>author desc</item>
+	</string-array>
+    <string name="sorting_title">Sort by</string>
+    <string-array name="epub_sorting">
+		<item>A - Z</item>
+		<item>Z - A</item>
+		<item>by Author ASC</item>
+		<item>by Author DESC</item>
+	</string-array>
 </resources>

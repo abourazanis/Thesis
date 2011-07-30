@@ -1,11 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-  <item 
+  
+        <item 
 		android:id="@+id/importEpub" 
 		android:title="@string/importEpub"
 		android:icon="@drawable/ic_menu_import"
-		android:showAsAction="ifRoom">
+		android:showAsAction="ifRoom|withText">
 	</item>
+	<item
+        android:id="@+id/menu_search"
+        android:title="@string/search_hint"
+        android:icon="@drawable/ic_action_search"
+        android:showAsAction="ifRoom|withText" />
+	<item 
+		android:id="@+id/web" 
+		android:title="@string/webStore"
+		android:icon="@drawable/ic_tab_web_unselected"
+		android:showAsAction="ifRoom|withText">
+	</item>
+	
+        <item
+        android:id="@+id/menu_showsortby"
+        android:title="@string/sort"
+        android:icon="@drawable/ic_action_sort" />
     
 </menu>

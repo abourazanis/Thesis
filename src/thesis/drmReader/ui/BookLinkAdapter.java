@@ -57,10 +57,10 @@ public class BookLinkAdapter extends ArrayAdapter<BookLink> {
 			view = inflater.inflate(R.layout.list_item, null);
 
 			holder = new ViewHolder();
-			holder.imageView = (ImageView) view.findViewById(R.id.icon);
+			holder.imageView = (ImageView) view.findViewById(R.id.epubCover);
 			holder.textViewBottom = (TextView) view
-					.findViewById(R.id.bottomtext);
-			holder.textViewTop = (TextView) view.findViewById(R.id.toptext);
+					.findViewById(R.id.epubAuthor);
+			holder.textViewTop = (TextView) view.findViewById(R.id.epubTitle);
 
 			view.setTag(holder);
 		} else {

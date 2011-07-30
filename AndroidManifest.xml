@@ -13,28 +13,50 @@
 		android:smallScreens="true"
 		android:anyDensity="true" />
 
-    <application android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true">
-    <activity android:name="DrmReaderMainActivity"
+    <application android:name="DrmReaderApplication" android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true">
+    <activity android:name=".ui.ArchiveListActivity"
                   android:label="@string/app_name"
-                  android:theme="@style/Theme.Sherlock.Light">
+                  android:theme="@style/Theme.Sherlock">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.default_searchable"
+                android:value="thesis.drmReader.ui.EpubsSearchActivity" />
         </activity>
+        <activity android:name=".ui.WebListActivity"
+                  android:label="@string/webStore"
+                  android:theme="@style/Theme.Sherlock">
+        </activity>
+        
+        <activity android:name=".ui.EpubsSearchActivity" android:launchMode="singleTop">
+        <intent-filter>
+            <action android:name="android.intent.action.SEARCH" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+        <meta-data android:name="android.app.searchable"
+                   android:resource="@xml/searchable"/>
+    </activity>
+        
         <activity android:name=".reader.ReaderView"
         		  android:label="@string/app_name"
         		  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
         <activity android:name=".filebrowser.FileBrowser"
-                  android:label="@string/app_name">
+                  android:label="@string/app_name"
+                  android:theme="@style/Theme.Sherlock">
         </activity>
         <activity android:name=".reader.TOCList"
-                  android:label="@string/tableOfContents">
+                  android:label="@string/tableOfContents"
+                  android:theme="@style/Theme.Sherlock">
         </activity>
         
         <provider android:name=".reader.ReaderFileProvider"
           android:authorities="thesis.drmReader.reader"
+      />
+      <provider android:name=".db.DrmReaderProvider"
+          android:authorities="thesis.drmreader"
       />
 
     </application>

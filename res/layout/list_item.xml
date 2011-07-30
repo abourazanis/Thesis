@@ -1,35 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout 
+	xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="?android:attr/listPreferredItemHeight"
-    android:padding="6dip">
+    android:layout_height="wrap_content">
     <ImageView
-        android:id="@+id/icon"
-        android:layout_width="50dip"
-        android:layout_height="70dip"
-        android:layout_marginRight="6dip"
-        android:scaleType="fitXY"
+        android:id="@+id/epubCover"
+        android:layout_width="68dip"
+        android:layout_height="100dip"
+        android:layout_marginTop="5dip"
+        android:layout_marginRight="10dip"
+        android:layout_marginBottom="5dip"
+        android:layout_alignParentLeft="true"
+        android:scaleType="centerInside"
          />
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_width="0dip"
-        android:layout_weight="1"
-        android:layout_height="fill_parent">
+         <TextView
+        android:id="@+id/epubTitle"
+        style="@style/ListTitle"
+        android:textSize="18sp"
+        android:paddingTop="2dp"
+        android:paddingRight="5dp"
+        android:paddingBottom="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/epubCover"/>
         <TextView
-            android:id="@+id/toptext"
-            android:layout_width="fill_parent"
-            android:layout_height="0dip"
-            android:layout_weight="1"
-            android:textStyle="bold"
-            android:gravity="center_vertical"
-        />
+        android:id="@+id/epubAuthor"
+        style="@style/SmallFont"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingRight="5dp"
+        android:layout_below="@id/epubTitle"
+        android:layout_toRightOf="@id/epubCover" />
         <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="0dip"
-            android:layout_weight="1" 
-            android:id="@+id/bottomtext"
-            android:singleLine="true"
-            android:ellipsize="marquee"
-        />
-    </LinearLayout>
-</LinearLayout>
+        android:id="@+id/epubPublisher"
+        style="@style/Epubdata"
+        android:paddingRight="5dp"
+        android:paddingBottom="2dp"
+        android:layout_below="@id/epubAuthor"
+        android:layout_toRightOf="@id/epubCover"/>
+        <LinearLayout
+		android:orientation="vertical"
+		android:id="@+id/language"
+		android:layout_width="100dp"
+		android:layout_height="wrap_content"
+		android:paddingRight="5dp"
+		android:layout_alignParentRight="true"
+		android:gravity="right">
+		<TextView android:id="@+id/epubLanguage"
+			style="@style/Epubdata"
+			android:paddingTop="5dp"
+			android:gravity="right"
+			android:lineSpacingExtra="2sp"/>
+	</LinearLayout>
+    </RelativeLayout>

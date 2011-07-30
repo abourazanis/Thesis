@@ -6,4 +6,9 @@
 		android:icon="@drawable/ic_action_refresh"
 		android:showAsAction="ifRoom">
 	</item>
+	<item
+        android:id="@+id/menu_search"
+        android:title="@string/search_hint"
+        android:icon="@drawable/ic_action_search"
+        android:showAsAction="ifRoom|withText" />
 </menu>

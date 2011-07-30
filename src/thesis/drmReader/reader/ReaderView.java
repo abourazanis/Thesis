@@ -20,6 +20,7 @@ import nl.siegmann.epublib.epub.EpubReader;
 import org.xml.sax.SAXException;
 
 import thesis.drmReader.R;
+import thesis.drmReader.db.EpubsContract.Epubs;
 import thesis.drmReader.reader.SimpleGestureFilter.SimpleGestureListener;
 import thesis.drmReader.ui.NumberPicker;
 import thesis.drmReader.ui.NumberPicker.OnChangedListener;
@@ -105,22 +106,33 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private int displayHeight;
 	private String cache;
 
-	private int mCurPage = 1;
-	private float mCurPercentage = 0.0f;
-	private int mMaxPage = 1;
+	private int mCurPage;// = 1;
+	private float mCurPercentage;// = 0.0f;
+	private int mMaxPage;// = 1;
 
 	private Book currentDoc;
 	private Navigator navigator;
+	private Bundle mState;
 
 	@Override
 	public void onSaveInstanceState(Bundle savedInstanceState) {
-
-		savedInstanceState.putString("curResourceHref",navigator.getCurrentResource().getHref());
-		savedInstanceState.putInt("curPage",mCurPage);
-		savedInstanceState.putFloat("curPercentage", mCurPercentage);
 		super.onSaveInstanceState(savedInstanceState);
+		savedInstanceState.putString("curResourceHref", navigator
+				.getCurrentResource().getHref());
+		savedInstanceState.putInt("curPage", mCurPage);
+		savedInstanceState.putFloat("curPercentage", mCurPercentage);
+		progressDialog = null;
+		mState = null;
 	}
-	
+
+	@Override
+	public void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		mState = savedInstanceState;
+		navigator.gotoResource(savedInstanceState.getString("curResourceHref"),
+				this);
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -133,7 +145,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			return;
 		}
 
-		String docSrc = extras.getString("docSrc");
+		String docSrc = extras.getString(Epubs.FILENAME);
 		if (docSrc != null && docSrc != "") {
 			try {
 				FileInputStream epubStream = new FileInputStream(docSrc);
@@ -146,13 +158,10 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 														// current resource the
 														// cover
 				navigator.addNavigationEventListener(this);
-				if(savedInstanceState != null){
-					mCurPage = savedInstanceState.getInt("curPage");
-					mCurPercentage = savedInstanceState.getFloat("curPercentage");
-					navigator.gotoResource(savedInstanceState.getString("curResourceHref"), this);
+
+				if (savedInstanceState == null) {
+					readDocumentSpineEntry();
 				}
-				
-				readDocumentSpineEntry();
 				String author = null;
 				if (currentDoc.getMetadata().getAuthors().size() > 0)
 					author = currentDoc.getMetadata().getAuthors().get(0)
@@ -172,8 +181,8 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	@SuppressWarnings("deprecation")
 	private void setUpUI() {
 		setContentView(R.layout.reader);
-		
-		if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB )
+
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB)
 			getActionBar().hide();
 
 		webView = (WebView) findViewById(R.id.webView);
@@ -330,7 +339,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.toc:
-			Log.d(TAG,"TOC Selected");
+			Log.d(TAG, "TOC Selected");
 			Iterator<TOCReference> it = currentDoc.getTableOfContents()
 					.getTocReferences().iterator();
 			ArrayList<String> titles = new ArrayList<String>();
@@ -340,19 +349,21 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			}
 			Intent i = new Intent(this, TOCList.class);
 			i.putStringArrayListExtra("titles", titles);
-			i.putExtra("currentTitle", ReaderUtils.getChapterName(currentDoc,
-					navigator.getCurrentResource()));
+			i.putExtra(
+					"currentTitle",
+					ReaderUtils.getChapterName(currentDoc,
+							navigator.getCurrentResource()));
 			this.startActivityForResult(i, TOC_LIST);
 			return true;
 		case R.id.font_size:
-			Log.d(TAG,"Font Selected");
+			Log.d(TAG, "Font Selected");
 			showDialog(FONT_SIZE_MENU);
 			return true;
 		case R.id.home:
 			super.onBackPressed();
 			return true;
 		default:
-			Log.d(TAG,"Default Selected");
+			Log.d(TAG, "Default Selected");
 			return super.onOptionsItemSelected(item);
 		}
 	}
@@ -474,9 +485,13 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 	private void readDocumentSpineEntry() {
 
+		// if(progressDialog != null && progressDialog.isShowing()){
+		// progressDialog.dismiss();
+		// }
 		new LoadDocTask(this).execute();
-		progressDialog = ProgressDialog.show(ReaderView.this, "Please wait...",
-				"Parsing..", true);
+		// progressDialog = ProgressDialog.show(ReaderView.this,
+		// "Please wait...",
+		// "Parsing..", true);
 
 	}
 
@@ -539,7 +554,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 			// problem: http://code.google.com/p/android/issues/detail?id=1733
 			// webView.loadData(result, "text/html", "utf-8");
 
-			progressDialog.dismiss();
+			// activity.progressDialog.dismiss();
 
 			super.onPostExecute(result);
 		}
@@ -579,8 +594,14 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		} else {
 			if (navigationEvent.isResourceChanged()) {
 				readDocumentSpineEntry();
-				mCurPage = 1;
-				mCurPercentage = 0.0f;
+				if (mState != null) {
+					mCurPage = mState.getInt("curPage");
+					mCurPercentage = mState.getFloat("curPercentage");
+					mState = null;
+				} else {
+					mCurPage = 1;
+					mCurPercentage = 0.0f;
+				}
 			} else if (navigationEvent.isSectionPosChanged()) {
 				// editorPane.setCaretPosition(navigationEvent.getCurrentSectionPos());
 			}
