@@ -1,78 +1,149 @@
-/* $Id: BulletedTextListAdapter.java 57 2007-11-21 18:31:52Z steven $
-*
-* Copyright 2007 Steven Osborn
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
 package thesis.drmReader.filebrowser;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
+import thesis.drmReader.R;
+
 import android.content.Context;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
+import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
 
-/** @author Steven Osborn - http://steven.bitsetters.com */
-public class IconifiedTextListAdapter extends BaseAdapter {
+import android.widget.ImageView;
+import android.widget.TextView;
 
-       /** Remember our context so we can use it when constructing views. */
-       private Context mContext;
+public class IconifiedTextListAdapter extends ArrayAdapter<IconifiedText> {
 
-       private List<IconifiedText> mItems = new ArrayList<IconifiedText>();
+	/** Remember our context so we can use it when constructing views. */
+	private Context mContext;
 
-       public IconifiedTextListAdapter(Context context) {
-               mContext = context;
-       }
+	private List<IconifiedText> mItems;
 
-       public void addItem(IconifiedText it) { mItems.add(it); }
+	public IconifiedTextListAdapter(Context context, int textViewResourceId,
+			ArrayList<IconifiedText> items) {
+		super(context, textViewResourceId, items);
+		mContext = context;
+		mItems = items;
+	}
 
-       public void setListItems(List<IconifiedText> lit) { mItems = lit; }
+	/** @return The number of items in the */
+	public int getCount() {
+		return mItems.size();
+	}
 
-       /** @return The number of items in the */
-       public int getCount() { return mItems.size(); }
+	public boolean isSelectable(int position) {
+		try {
+			return mItems.get(position).isSelectable();
+		} catch (IndexOutOfBoundsException aioobe) {
+			return false;
+			// return super.isSelectable(position);
+		}
+	}
 
-       public Object getItem(int position) { return mItems.get(position); }
+	/** Use the array index as a unique id. */
+	public long getItemId(int position) {
+		return position;
+	}
 
-       public boolean areAllItemsSelectable() { return false; }
+	public List<IconifiedText> getSelectedItems() {
+		List<IconifiedText> items = new ArrayList<IconifiedText>();
+		Iterator<IconifiedText> it = mItems.iterator();
+		while (it.hasNext()) {
+			IconifiedText item = it.next();
+			if (item.isChecked())
+				items.add(item);
+		}
+		return items;
+	}
 
-       public boolean isSelectable(int position) {
-               try{
-                       return mItems.get(position).isSelectable();
-               }catch (IndexOutOfBoundsException aioobe){
-            	   		return false;
-                      // return super.isSelectable(position);
-               }
-       }
+	public void setSelectedItems(String[] itemNames) {
+		for (String item : itemNames) {
+			Iterator<IconifiedText> it = mItems.iterator();
+			while (it.hasNext()) {
+				IconifiedText icItem = it.next();
+				if (icItem.getText().equalsIgnoreCase(item)) {
+					icItem.toggle();
+				}
+			}
+		}
+		this.notifyDataSetChanged();
 
-       /** Use the array index as a unique id. */
-       public long getItemId(int position) {
-               return position;
-       }
+	}
 
-       /** @param convertView The old view to overwrite, if one is passed
-        * @returns a IconifiedTextView that holds wraps around an IconifiedText */
-       public View getView(int position, View convertView, ViewGroup parent) {
-               IconifiedTextView btv;
-               if (convertView == null) {
-                       btv = new IconifiedTextView(mContext, mItems.get(position));
-               } else { // Reuse/Overwrite the View passed
-                       // We are assuming(!) that it is castable!
-                       btv = (IconifiedTextView) convertView;
-                       btv.setText(mItems.get(position).getText());
-                       btv.setIcon(mItems.get(position).getIcon());
-               }
-               return btv;
-       }
+	public void clearSelections() {
+		Iterator<IconifiedText> it = mItems.iterator();
+		while (it.hasNext()) {
+			IconifiedText item = it.next();
+			if (item.isChecked())
+				item.toggle();
+		}
+		this.notifyDataSetChanged();
+	}
+
+	// static to save the reference to the outer class and to avoid access to
+	// any members of the containing class
+	static class ViewHolder {
+		public ImageView icon;
+		public TextView filename;
+		public TextView filesize;
+		public CheckBox checkbox;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		// ViewHolder will buffer the assess to the individual fields of the row
+		// layout
+
+		ViewHolder holder;
+		// Recycle existing view if passed as parameter
+		// This will save memory and time on Android
+		// This only works if the base layout for all classes are the same
+
+		View view = convertView;
+		if (view == null) {
+			LayoutInflater inflater = (LayoutInflater) this.getContext()
+					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			view = inflater.inflate(R.layout.browser_filerow, null);
+
+			holder = new ViewHolder();
+			holder.icon = (ImageView) view.findViewById(R.id.browser_file_icon);
+			holder.filename = (TextView) view
+					.findViewById(R.id.browser_filename);
+			holder.filesize = (TextView) view
+					.findViewById(R.id.browser_filesize);
+			holder.checkbox = (CheckBox) view
+					.findViewById(R.id.browser_checkbox);
+
+			view.setTag(holder);
+		} else {
+			holder = (ViewHolder) view.getTag();
+		}
+
+		final int pos = position;
+		holder.checkbox.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				((CheckBox) v).toggle();
+				mItems.get(pos).toggle();
+				((FileBrowser) mContext).showButtonActions();
+			}
+		});
+
+		if (!mItems.get(position).isSelectable()) {
+			holder.checkbox.setVisibility(View.INVISIBLE);
+		} else {
+			holder.checkbox.setVisibility(View.VISIBLE);
+		}
+
+		holder.checkbox.setChecked(mItems.get(position).isChecked());
+		holder.filename.setText(mItems.get(position).getText());
+		holder.icon.setImageDrawable(mItems.get(position).getIcon());
+
+		return view;
+	}
 }

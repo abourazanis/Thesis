@@ -13,10 +13,9 @@
 		android:smallScreens="true"
 		android:anyDensity="true" />
 
-    <application android:name="DrmReaderApplication" android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true">
+    <application android:name="DrmReaderApplication" android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true" android:theme="@style/Theme.Sherlock">
     <activity android:name=".ui.ArchiveListActivity"
-                  android:label="@string/app_name"
-                  android:theme="@style/Theme.Sherlock">
+                  android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -26,8 +25,7 @@
                 android:value="thesis.drmReader.ui.EpubsSearchActivity" />
         </activity>
         <activity android:name=".ui.WebListActivity"
-                  android:label="@string/webStore"
-                  android:theme="@style/Theme.Sherlock">
+                  android:label="@string/webStore">
         </activity>
         
         <activity android:name=".ui.EpubsSearchActivity" android:launchMode="singleTop">
@@ -44,12 +42,10 @@
         		  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
         <activity android:name=".filebrowser.FileBrowser"
-                  android:label="@string/app_name"
-                  android:theme="@style/Theme.Sherlock">
+                  android:label="@string/app_name">
         </activity>
         <activity android:name=".reader.TOCList"
-                  android:label="@string/tableOfContents"
-                  android:theme="@style/Theme.Sherlock">
+                  android:label="@string/tableOfContents">
         </activity>
         
         <provider android:name=".reader.ReaderFileProvider"

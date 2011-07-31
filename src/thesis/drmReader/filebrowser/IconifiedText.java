@@ -12,21 +12,38 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * minor changes fro drmReader by A.Bourazanis
  */
 package thesis.drmReader.filebrowser;
  
 import android.graphics.drawable.Drawable;
  
 /** @author Steven Osborn - http://steven.bitsetters.com */
+/** @author Anastasios Bourazanis - check functionality */
 public class IconifiedText implements Comparable<IconifiedText>{
    
         private String mText = "";
         private Drawable mIcon;
         private boolean mSelectable = true;
+        private boolean mSelected = false;
  
         public IconifiedText(String text, Drawable bullet) {
-                mIcon = bullet;
-                mText = text;
+                this(text,bullet,true);
+        }
+        
+        public IconifiedText(String text, Drawable bullet, boolean isSelectable) {
+            mIcon = bullet;
+            mText = text;
+            mSelectable = isSelectable;
+    }
+        
+        public boolean isChecked(){
+        	return mSelected;
+        }
+        
+        public void toggle(){
+        	mSelected = !mSelected;
         }
        
         public boolean isSelectable() {

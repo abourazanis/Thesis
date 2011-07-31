@@ -17,6 +17,7 @@
 
 package thesis.drmReader.filebrowser;
 
+import android.R;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
@@ -34,7 +35,9 @@ public class IconifiedTextView extends LinearLayout {
                /* First Icon and the Text to the right (horizontal),
                 * not above and below (vertical) */
                this.setOrientation(HORIZONTAL);
-
+               LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT,R.attr.listPreferredItemHeight);
+               this.setLayoutParams(params);
+               
                mIcon = new ImageView(context);
                mIcon.setImageDrawable(aIconifiedText.getIcon());
                // left, top, right, bottom
@@ -43,7 +46,7 @@ public class IconifiedTextView extends LinearLayout {
                /* At first, add the Icon to ourself
                 * (! we are extending LinearLayout) */
                addView(mIcon,  new LinearLayout.LayoutParams(
-                               LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+                               LayoutParams.WRAP_CONTENT, LayoutParams.FILL_PARENT ));
               
                mText = new TextView(context);
                mText.setText(aIconifiedText.getText());

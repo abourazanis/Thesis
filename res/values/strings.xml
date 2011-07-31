@@ -30,7 +30,9 @@
     <string name="import_file_error_msg">File not found</string>
     <string name="import_invalid_key_title">Import key error</string>
     <string name="import_invalid_key_msg">Invalid decryption key.It belongs to another device.</string>
-    
+    <string name="browser_empty">empty</string>
+    <string name="browser_action_import">import files</string>
+    <string name="browser_action_clear">unselect all</string>
     
     <!--  Sorting -->
     <string-array name="epub_sortingData">

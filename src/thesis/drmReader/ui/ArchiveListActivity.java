@@ -29,6 +29,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Debug;
 import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
 import android.support.v4.app.FragmentActivity;
@@ -140,10 +141,18 @@ public class ArchiveListActivity extends FragmentActivity implements
 		super.onResume();
 		checkPreferences();
 	}
+	
+	public void onStart() {
+   		// start tracing to “/sdcard/archiveList.trace”
+   		//Debug.startMethodTracing("archiveList");
+		super.onStart();
+ 			// other start up code here…
+       }
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		//Debug.stopMethodTracing();
 	}
 
 	@Override
@@ -317,9 +326,8 @@ public class ArchiveListActivity extends FragmentActivity implements
 		if (resultCode == Activity.RESULT_OK) {
 			switch (requestCode) {
 			case Constants.IMPORT_REQUEST:
-				// TODO: return an array of selected filepaths
-				String epubFile = data.getStringExtra("filepath");
-				importEpub(new String[] { epubFile });
+				String[] epubFiles = data.getStringArrayExtra("filepaths");
+				importEpub(epubFiles );
 				break;
 			}
 		}

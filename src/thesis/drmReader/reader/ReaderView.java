@@ -7,7 +7,6 @@ import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import javax.xml.parsers.ParserConfigurationException;
 
 import nl.siegmann.epublib.browsersupport.NavigationEvent;
 import nl.siegmann.epublib.browsersupport.NavigationEventListener;
@@ -17,7 +16,6 @@ import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.domain.TOCReference;
 import nl.siegmann.epublib.epub.EpubReader;
 
-import org.xml.sax.SAXException;
 
 import thesis.drmReader.R;
 import thesis.drmReader.db.EpubsContract.Epubs;
@@ -25,13 +23,15 @@ import thesis.drmReader.reader.SimpleGestureFilter.SimpleGestureListener;
 import thesis.drmReader.ui.NumberPicker;
 import thesis.drmReader.ui.NumberPicker.OnChangedListener;
 import thesis.drmReader.util.ReaderUtils;
+import thesis.drmReader.util.concurrent.BetterApplication;
+import thesis.drmReader.util.concurrent.BetterAsyncTask;
+import thesis.drmReader.util.concurrent.BetterAsyncTaskCallable;
 import thesis.sec.Decrypter;
 import android.app.Activity;
+import android.app.Application;
 import android.app.Dialog;
-import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -99,7 +99,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private boolean isOsdOn = false;
 
 	private SimpleGestureFilter detector;
-	private ProgressDialog progressDialog;
 	private Decrypter decrypter;
 
 	private int displayWidth;
@@ -121,7 +120,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 				.getCurrentResource().getHref());
 		savedInstanceState.putInt("curPage", mCurPage);
 		savedInstanceState.putFloat("curPercentage", mCurPercentage);
-		progressDialog = null;
 		mState = null;
 	}
 
@@ -143,6 +141,12 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		Bundle extras = getIntent().getExtras();
 		if (extras == null) {
 			return;
+		}
+		
+		Application application = getApplication();
+		if (application instanceof BetterApplication) {
+			((BetterApplication) application).setActiveContext(getClass()
+					.getCanonicalName(), this);
 		}
 
 		String docSrc = extras.getString(Epubs.FILENAME);
@@ -511,63 +515,62 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		webSettings.setDefaultFontSize(newVal);
 		readDocumentSpineEntry();
 	}
+	
+	
+	private class LoadDocTask extends BetterAsyncTask<Void, Void, String> implements BetterAsyncTaskCallable<Void, Void, String>{
 
-	private class LoadDocTask extends AsyncTask<Void, Void, String> {
-
-		ReaderView activity = null;
-
-		LoadDocTask(ReaderView activity) {
-			this.activity = activity;
+		public LoadDocTask(Context context) {
+			super(context);
+			this.setCallable(this);
 		}
 
 		@Override
-		protected String doInBackground(Void... params) {
+		protected void before(Context context) {
+			// TODO Auto-generated method stub
+			
+		}
 
+		@Override
+		protected void handleError(Context context, Exception error) {
+			Log.e(TAG, error.getMessage());
+			
+		}
+
+		@Override
+		protected void after(Context context, String result) {
+			((ReaderView)context).webView.clearHistory();
+			((ReaderView)context).webView.clearFormData();
+			((ReaderView)context).webView.clearCache(true);
+			((ReaderView)context).webView.loadDataWithBaseURL(null, result, null, "utf-8", null);
+			// problem: http://code.google.com/p/android/issues/detail?id=1733
+			// webView.loadData(result, "text/html", "utf-8");
+			
+		}
+
+		@Override
+		protected void onCancel(Context context) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+		@Override
+		public String call(BetterAsyncTask<Void, Void, String> task)
+				throws Exception {
 			String htmlContent = "";
-			try {
-				Resource resource = activity.decrypter
-						.decrypt(activity.navigator.getCurrentResource());
+			
+				Resource resource = ((ReaderView)this.getCallingContext()).decrypter
+						.decrypt(((ReaderView)this.getCallingContext()).navigator.getCurrentResource());
 				htmlContent = ReaderUtils.getModifiedDocument(
-						activity.navigator.getBook(), resource, displayWidth,
+						((ReaderView)this.getCallingContext()).navigator.getBook(), resource, displayWidth,
 						displayHeight, cache);
-
-			} catch (IOException e) {
-				Log.e(TAG, e.getMessage());
-			} catch (InvalidKeyException e) {
-				Log.e(TAG, e.getMessage());
-			} catch (SAXException e) {
-				e.printStackTrace();
-			} catch (ParserConfigurationException e) {
-				e.printStackTrace();
-			}
 
 			return htmlContent;
 		}
-
-		@Override
-		protected void onPostExecute(String result) {
-
-			webView.clearHistory();
-			webView.clearFormData();
-			webView.clearCache(true);
-			webView.loadDataWithBaseURL(null, result, null, "utf-8", null);
-			// problem: http://code.google.com/p/android/issues/detail?id=1733
-			// webView.loadData(result, "text/html", "utf-8");
-
-			// activity.progressDialog.dismiss();
-
-			super.onPostExecute(result);
-		}
-
-		void detach() {
-			activity = null;
-		}
-
-		void attach(ReaderView activity) {
-			this.activity = activity;
-		}
-
+		
 	}
+	
+	
+
 
 	/**
 	 * Bridge for Javascript call

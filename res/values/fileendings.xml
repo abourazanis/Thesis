@@ -24,5 +24,8 @@
         <item>.html</item>
         <item>.php</item>
     </array>
+    <array name="fileEndingEpub">
+        <item>.epub</item>
+    </array>
 </resources>
      

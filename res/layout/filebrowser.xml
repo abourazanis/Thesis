@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" 
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+	<RelativeLayout 
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content">
+    <ImageView
+        android:id="@+id/browser_title_icon"
+        android:src="@drawable/sdcard"
+        android:layout_width="48dip"
+        android:layout_height="40dip"
+        android:layout_marginTop="5dip"
+        android:layout_marginRight="10dip"
+        android:layout_marginBottom="5dip"
+        android:layout_alignParentLeft="true"
+        android:scaleType="centerInside"
+         />
+         <TextView
+        android:id="@+id/browser_title_text"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingTop="2dp"
+        android:paddingRight="5dp"
+        android:paddingBottom="0dp"
+        android:layout_width="wrap_content"
+        android:ellipsize="marquee"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/browser_title_icon"/>
+        <ImageView
+        android:id="@+id/browser_up"
+        android:layout_width="48dip"
+        android:layout_height="40dip"
+	android:layout_marginTop="5dip"
+        android:layout_marginRight="10dip"
+        android:layout_alignParentRight="true"
+        android:scaleType="centerInside"
+        android:src="@drawable/uponelevel" />
+        </RelativeLayout>
+        <RelativeLayout
+        android:id="@+id/browser_filelist"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+	android:layout_weight="1"
+	>
+        <ListView
+            android:id="@id/android:list"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+	    android:layout_gravity="top"/>
+        <TextView
+            android:id="@id/android:empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+	    android:layout_gravity="top"
+            android:padding="10dp"
+            android:text="@string/browser_empty"
+            android:visibility="gone" />
+	    </RelativeLayout>
+	    <RelativeLayout
+			android:id="@+id/browser_actionbuttons"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:visibility="gone"
+			android:background="#bf000000"
+			android:paddingLeft="5px"
+			android:paddingRight="5px"
+			android:paddingTop="3px"
+			android:paddingBottom="3px"
+			 >
+			 <Button
+        android:id="@+id/overlay_ok"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/btn_default_holo_dark"
+        android:textColor="#ffffffff"
+        android:minWidth="100dip"
+        android:layout_alignParentLeft="true"
+        android:text="@string/browser_action_import" />
+    
+    <Button
+        android:id="@+id/overlay_clear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/btn_default_holo_dark"
+        android:textColor="#ffffffff"
+        android:minWidth="100dip"
+        android:layout_alignParentRight="true"
+        android:text="@string/browser_action_clear" />
+		</RelativeLayout>
+
+</LinearLayout>
