@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 
 import nl.siegmann.epublib.domain.Metadata;
+import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.epub.EpubReader;
 import nl.siegmann.epublib.util.IOUtil;
 
@@ -19,6 +20,8 @@ import thesis.drmReader.util.concurrent.BetterAsyncTask;
 import thesis.drmReader.util.concurrent.BetterAsyncTaskCallable;
 import thesis.sec.Decrypter;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
@@ -116,6 +119,13 @@ public class ImportTask extends BetterAsyncTask<Void, Integer, Integer>
 								new FileOutputStream(fileName));
 						publishProgress((i + 1) * 90, 100 * (files.length + 1));
 						epubLink.setId(String.valueOf(fileName));
+						
+						Resource coverResource = decrypter.decrypt(meta
+								.getCoverImage());
+						epubLink.getMeta().setCoverImage(coverResource);
+						
+						putCoverToCache(this.getCallingContext(),coverResource.getData(),meta.getFirstTitle());
+						
 						EpubsDatabase.addEpub(epubLink,
 								this.getCallingContext());
 						publishProgress((i + 1) * 100, 100 * (files.length + 1));
@@ -191,6 +201,18 @@ public class ImportTask extends BetterAsyncTask<Void, Integer, Integer>
 	protected void onCancel(Context context) {
 		((ArchiveListActivity) context)
 		.hideOverlay(((ArchiveListActivity) context).mProgressOverlay);
+	}
+	
+	private void putCoverToCache(Context context, byte[] coverData, String filename) {
+		Log.d("putCoverToCache ","filename " + filename );
+		Bitmap bitmap = BitmapFactory.decodeByteArray(coverData, 0,
+				coverData.length);
+		if (bitmap != null) {
+			((ArchiveListActivity) context).mImageCache.put(filename, bitmap);
+
+			// create thumbnail
+			((ArchiveListActivity) context).mImageCache.getThumbHelper(filename);
+		}
 	}
 
 }

@@ -26,10 +26,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Debug;
 import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
 import android.support.v4.app.FragmentActivity;
@@ -70,7 +68,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 	public ProgressBar mUpdateProgress;
 	public View mProgressOverlay;
 	private SlowAdapter mAdapter;
-	private ImageCache mImageCache;
+	public ImageCache mImageCache;
 	public boolean mBusy;
 	private ImportTask mImportTask;
 	private EpubSorting sorting;
@@ -84,6 +82,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 
 		mImageCache = ((thesis.drmReader.DrmReaderApplication) this
 				.getApplication()).getImageCache();
+		
 
 		String[] from = new String[] { Epubs.TITLE, Epubs.LANGUAGE,
 				Authors.FIRSTNAME, Authors.LASTNAME, Publishers.FIRSTNAME };
@@ -392,16 +391,18 @@ public class ArchiveListActivity extends FragmentActivity implements
 
 	private interface EpubsQuery {
 		String[] PROJECTION = { BaseColumns._ID, Epubs.TITLE, Epubs.SUBJECT,
-				Epubs.DESCRIPTION, Epubs.COVERDATA, Epubs.FILENAME,
+				Epubs.DESCRIPTION, Epubs.FILENAME,
 				Epubs.LANGUAGE, Authors.FIRSTNAME, Authors.LASTNAME,
 				Publishers.FIRSTNAME };
 		
 		int TITLE = 1;
-		int COVERDATA = 4;
-		int LANGUAGE = 6;
-		int FIRSTNAME = 7;
-		int LASTNAME = 8;
-		int PUBLISHER = 9;
+		int SUBJECT = 2;
+		int DESCRIPTION = 3;
+		int FILENAME = 4;
+		int LANGUAGE = 5;
+		int FIRSTNAME = 6;
+		int LASTNAME = 7;
+		int PUBLISHER = 8;
 		
 	}
 
@@ -461,11 +462,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 					+ mCursor.getString(EpubsQuery.LASTNAME));
 			viewHolder.textViewLanguage.setText(mCursor.getString(EpubsQuery.LANGUAGE));
 			viewHolder.textViewPublisher.setText(mCursor.getString(EpubsQuery.PUBLISHER));
-
-			// get cover data
-			byte[] cover = mCursor.getBlob(EpubsQuery.COVERDATA);
-			// store cover in cache
-			putCoverToCache(cover, title);
+			
 
 			// set cover only when not busy scrolling
 			if (!mBusy) {
@@ -534,18 +531,9 @@ public class ArchiveListActivity extends FragmentActivity implements
 			cover.setImageBitmap(bitmap);
 		} else {
 			// set placeholder
+			Log.d(TAG, "image not found PATH " + path);
 			cover.setImageResource(R.drawable.icon);
-		}
-	}
-
-	private void putCoverToCache(byte[] coverData, String filename) {
-		Bitmap bitmap = BitmapFactory.decodeByteArray(coverData, 0,
-				coverData.length);
-		if (bitmap != null) {
-			mImageCache.put(filename, bitmap);
-
-			// create thumbnail
-			mImageCache.getThumbHelper(filename);
+			//maybe a thread to restore image from DB
 		}
 	}
 
