@@ -124,7 +124,7 @@ public class ImportTask extends BetterAsyncTask<Void, Integer, Integer>
 								.getCoverImage());
 						epubLink.getMeta().setCoverImage(coverResource);
 						
-						putCoverToCache(this.getCallingContext(),coverResource.getData(),meta.getFirstTitle());
+						Utils.putCoverToCache(this.getCallingContext().getApplicationContext(),coverResource.getData(),meta.getFirstTitle());
 						
 						EpubsDatabase.addEpub(epubLink,
 								this.getCallingContext());
@@ -202,17 +202,4 @@ public class ImportTask extends BetterAsyncTask<Void, Integer, Integer>
 		((ArchiveListActivity) context)
 		.hideOverlay(((ArchiveListActivity) context).mProgressOverlay);
 	}
-	
-	private void putCoverToCache(Context context, byte[] coverData, String filename) {
-		Log.d("putCoverToCache ","filename " + filename );
-		Bitmap bitmap = BitmapFactory.decodeByteArray(coverData, 0,
-				coverData.length);
-		if (bitmap != null) {
-			((ArchiveListActivity) context).mImageCache.put(filename, bitmap);
-
-			// create thumbnail
-			((ArchiveListActivity) context).mImageCache.getThumbHelper(filename);
-		}
-	}
-
 }

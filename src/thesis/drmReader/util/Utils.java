@@ -6,6 +6,8 @@ import java.io.InputStream;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
@@ -77,5 +79,17 @@ public class Utils {
         }
         return false;
     }
+	
+	public static void putCoverToCache(Context context, byte[] coverData, String filename) {
+		Bitmap bitmap = BitmapFactory.decodeByteArray(coverData, 0,
+				coverData.length);
+		if (bitmap != null) {
+			((thesis.drmReader.DrmReaderApplication) context).getImageCache().put(filename, bitmap);
+
+			// create thumbnail
+			((thesis.drmReader.DrmReaderApplication) context).getImageCache().getThumbHelper(filename);
+		}
+	}
+
 	
 }

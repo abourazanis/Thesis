@@ -23,9 +23,7 @@ public abstract class EpubLoader extends
 	/* Runs on the UI thread */
 	@Override
 	public void deliverResult(List<BookLink> data) {
-		Log.d(TAG,"deliverResult");
 		if (isReset()) {
-			Log.d(TAG,"deliverResult - isReset");
 			// An async query came in while the loader is stopped
 			return;
 		}
@@ -42,7 +40,6 @@ public abstract class EpubLoader extends
 	 */
 	@Override
 	protected void onStartLoading() {
-		Log.d(TAG,"onStartLoading");
 		// forceLoad();
 		if (data != null) {
 			deliverResult(data);
@@ -59,20 +56,17 @@ public abstract class EpubLoader extends
 	 */
 	@Override
 	protected void onStopLoading() {
-		Log.d(TAG,"onStopLoading");
 		// Attempt to cancel the current load task if possible.
 		cancelLoad();
 	}
 
 	@Override
 	public void onCanceled(List<BookLink> feed) {
-		Log.d(TAG,"onCanceled");
 		super.onCanceled(feed);
 	}
 
 	@Override
 	protected void onReset() {
-		Log.d(TAG,"onReset");
 		super.onReset();
 
 		// Ensure the loader is stopped

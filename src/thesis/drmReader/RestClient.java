@@ -60,6 +60,10 @@ public class RestClient {
 	public int getResponseCode() {
 		return responseCode;
 	}
+	
+	public String getSavedFilePath(){
+		return fileName;
+	}
 
 	public RestClient(String url) {
 		this(url,false,null);
@@ -144,7 +148,7 @@ public class RestClient {
 				contentLength = entity.getContentLength();
 				InputStream instream = entity.getContent();
 				if(isFileRequest){
-					saveFile(instream,fileName);
+					fileName = saveFile(instream,fileName);
 				}else{
 					response = convertStreamToString(instream);
 				}
@@ -162,13 +166,15 @@ public class RestClient {
 		}
 	}
 	
-	private static void saveFile(InputStream stream, String filename) throws IOException{
+	private static String saveFile(InputStream stream, String filename) throws IOException{
 			File root = android.os.Environment
 					.getExternalStorageDirectory();
-			File dir = new File(root.getAbsolutePath());
-			// dir.mkdirs();
+			File docDir = new File(root.getAbsolutePath()
+					+ "/drmReader");
+			if (!docDir.exists())
+				docDir.mkdirs();
 
-			File file = new File(dir, filename);
+			File file = new File(docDir, filename);
 			
 			BufferedInputStream bis = new BufferedInputStream(stream);
 			
@@ -185,6 +191,8 @@ public class RestClient {
 			fos.write(baf.toByteArray());
 			fos.flush();
 			fos.close();
+			
+			return file.getAbsolutePath();
 	}
 
 	private static String convertStreamToString(InputStream is) {

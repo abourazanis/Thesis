@@ -33,6 +33,11 @@
     <string name="browser_empty">empty</string>
     <string name="browser_action_import">import files</string>
     <string name="browser_action_clear">unselect all</string>
+    <string name="offline">There is no active connection to the internet reported. Please make sure you are connected to the internet and try again.</string>
+    <string name="offline_title">No connection</string>
+    <string name="weblist_error">Could not fetch the document list</string>
+    <string name="weblist_error_title">Error</string>
+    <string name="weblist_error_msg">Something went wrong during the data parsing.Please try again by pressing the update button</string>
     
     <!--  Sorting -->
     <string-array name="epub_sortingData">

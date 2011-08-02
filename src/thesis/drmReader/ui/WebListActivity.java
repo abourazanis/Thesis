@@ -13,14 +13,10 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import thesis.drmReader.R;
 import thesis.drmReader.RestClient;
 import thesis.drmReader.RestClient.RequestMethod;
-import thesis.drmReader.db.EpubDbAdapter;
-import thesis.drmReader.filebrowser.FileBrowser;
-import thesis.drmReader.ui.WebListFragment.ImportListener;
 import thesis.drmReader.util.Constants;
 import thesis.drmReader.util.Utils;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
@@ -36,7 +32,6 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
 
 public class WebListActivity extends FragmentActivity implements
 		AbsListView.OnScrollListener, LoaderCallbacks<List<BookLink>> {
@@ -53,7 +48,7 @@ public class WebListActivity extends FragmentActivity implements
 
 	private AbsListView list;
 	private ArrayList<BookLink> docList;
-	private BookLinkAdapter docAdapter;
+	//private BookLinkAdapter docAdapter;
 	private String docDown;
 	private Bundle args;
 
@@ -68,14 +63,14 @@ public class WebListActivity extends FragmentActivity implements
 		final Context context = this;
 
 		docList = new ArrayList<BookLink>();
-		docAdapter = new BookLinkAdapter(this, R.layout.list_item, docList);
-		list = (AbsListView) findViewById(android.R.id.list);
-		if (android.os.Build.VERSION.SDK_INT < 11) {
-			((ListView) list).setAdapter(docAdapter);
-		} else {
-			// only possible since API level 11 (Honeycomb)
-			list.setAdapter(docAdapter);
-		}
+//		docAdapter = new BookLinkAdapter(this, R.layout.list_item, docList);
+//		list = (AbsListView) findViewById(android.R.id.list);
+//		if (android.os.Build.VERSION.SDK_INT < 11) {
+//			((ListView) list).setAdapter(docAdapter);
+//		} else {
+//			// only possible since API level 11 (Honeycomb)
+//			list.setAdapter(docAdapter);
+//		}
 
 		list.setFastScrollEnabled(true);
 		list.setOnItemClickListener(new OnItemClickListener() {
@@ -93,10 +88,10 @@ public class WebListActivity extends FragmentActivity implements
 					// Constants.DOWNLOAD_DOCUMENT, args, callBacks);
 
 				} else {
-					// Toast.makeText(
-					// this,
-					// "SDCard is not mounted.Please mount your sdcard and try again",
-					// Toast.LENGTH_LONG).show();
+					 Toast.makeText(
+					 parent.getContext(),
+					 "SDCard is not mounted.Please mount your sdcard and try again",
+					 Toast.LENGTH_LONG).show();
 				}
 			}
 		});
@@ -120,7 +115,7 @@ public class WebListActivity extends FragmentActivity implements
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-		case R.id.refresh:
+		case R.id.menu_refresh:
 			refreshList();
 		case R.id.menu_search:
 			return true;
@@ -133,13 +128,13 @@ public class WebListActivity extends FragmentActivity implements
 	public Loader<List<BookLink>> onCreateLoader(int id, Bundle args) {
 		AsyncTaskLoader<List<BookLink>> loader = new AsyncTaskLoader<List<BookLink>>(
 				this) {
+			
 
 			@Override
 			public List<BookLink> loadInBackground() {
 				List<BookLink> result = null;
 				RestClient client = new RestClient(Constants.URL);
 				try {
-					Log.d("loader", "loader client execute");
 					client.Execute(RequestMethod.GET);
 					String responseString = client.getResponse();
 					int responseCode = client.getResponseCode();
@@ -163,7 +158,7 @@ public class WebListActivity extends FragmentActivity implements
 			List<BookLink> data) {
 		if (data != null && data.size() > 0) {
 			docList.addAll(data);
-			docAdapter.notifyDataSetChanged();
+			//docAdapter.notifyDataSetChanged();
 		}
 
 	}

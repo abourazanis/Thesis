@@ -219,11 +219,14 @@ public class EpubsDatabase {
 		if (!isAuthorExists(epub.getMeta().getAuthors().get(0), context))
 			batch.add(buildAuthorOp(epub.getMeta().getAuthors().get(0), context));
 
-		batch.add(buildEpubOp(epub, context, getEpubId(epub,context)));
-
 		try {
 			context.getContentResolver().applyBatch(
 					EpubsContract.CONTENT_AUTHORITY, batch);
+			
+			final ArrayList<ContentProviderOperation> batch_b = Lists.newArrayList();
+			batch_b.add(buildEpubOp(epub, context, getEpubId(epub,context)));
+			context.getContentResolver().applyBatch(
+					EpubsContract.CONTENT_AUTHORITY, batch_b);
 			
 		} catch (RemoteException e) {
 			// Failed binder transactions aren't recoverable

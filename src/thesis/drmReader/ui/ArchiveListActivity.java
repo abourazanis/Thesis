@@ -305,7 +305,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 			}
 			return true;
 		case R.id.web:
-			Intent intent = new Intent(this, WebListActivity.class);
+			Intent intent = new Intent(this, WebStoreActivity.class);
 			this.startActivity(intent);
 			return true;
 		case R.id.menu_showsortby:
@@ -473,7 +473,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 				viewHolder.imageView.setTag(null);
 			} else {
 				// set placeholder
-				viewHolder.imageView.setImageResource(R.drawable.icon);
+				viewHolder.imageView.setImageResource(R.drawable.nocover);
 
 				// Non-null tag means the view still needs to load it's data
 				viewHolder.imageView.setTag(title);
@@ -531,8 +531,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 			cover.setImageBitmap(bitmap);
 		} else {
 			// set placeholder
-			Log.d(TAG, "image not found PATH " + path);
-			cover.setImageResource(R.drawable.icon);
+			cover.setImageResource(R.drawable.nocover);
 			//maybe a thread to restore image from DB
 		}
 	}

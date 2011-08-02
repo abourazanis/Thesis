@@ -15,7 +15,8 @@
 
     <application android:name="DrmReaderApplication" android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true" android:theme="@style/Theme.Sherlock">
     <activity android:name=".ui.ArchiveListActivity"
-                  android:label="@string/app_name">
+                  android:label="@string/app_name"
+                  android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -24,7 +25,7 @@
                 android:name="android.app.default_searchable"
                 android:value="thesis.drmReader.ui.EpubsSearchActivity" />
         </activity>
-        <activity android:name=".ui.WebListActivity"
+        <activity android:name=".ui.WebStoreActivity"
                   android:label="@string/webStore">
         </activity>
         
@@ -62,4 +63,5 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"></uses-permission>
     <uses-permission android:name="android.permission.BLUETOOTH"></uses-permission>
     <uses-permission android:name="android.permission.INTERNET" ></uses-permission>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 </manifest>

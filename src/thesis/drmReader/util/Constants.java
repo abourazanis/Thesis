@@ -17,6 +17,9 @@ public class Constants {
 	public final static int DOWNLOAD_DOCLIST_ALERT = 4;
 	public final static int DOWNLOAD_DOCUMENT_ALERT = 5;
 	
+	public static final int OFFLINE = 201;
+	public final static int HTTP_RESPONSE_OK = 202;
+	
 	
 	//keys
 	public final static String KEY_EPUBSORTORDERARCHIVE = "epubArchiveSorting"; 
