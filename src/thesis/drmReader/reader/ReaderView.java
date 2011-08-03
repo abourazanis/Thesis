@@ -562,7 +562,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 						.decrypt(((ReaderView)this.getCallingContext()).navigator.getCurrentResource());
 				htmlContent = ReaderUtils.getModifiedDocument(
 						((ReaderView)this.getCallingContext()).navigator.getBook(), resource, displayWidth,
-						displayHeight, cache);
+						displayHeight, cache, ((ReaderView)this.getCallingContext()).decrypter);
 
 			return htmlContent;
 		}

@@ -55,6 +55,7 @@ public class WebStoreActivity extends FragmentActivity implements
 	ViewPager mViewPager;
 	TabsAdapter mTabsAdapter;
 	int mDialogShowing = -100;
+	int mActiveFragmentIndex = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -70,9 +71,9 @@ public class WebStoreActivity extends FragmentActivity implements
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 
 		mTabsAdapter = new TabsAdapter(this, mTabHost, mViewPager);
-		addTab("new", "New");
-		addTab("toppicks", "Top Picks");
-		addTab("all", "All");
+		addTab("new", "New", Constants.URL_NEW,0);
+		addTab("toppicks", "Top Picks", Constants.URL_TOP,1);
+		addTab("all", "All", Constants.URL,2);
 
 		if (savedInstanceState != null) {
 			mTabHost.setCurrentTabByTag(savedInstanceState.getString("tab"));
@@ -80,7 +81,7 @@ public class WebStoreActivity extends FragmentActivity implements
 
 	}
 
-	private void addTab(String tabname, String indicator) {
+	private void addTab(String tabname, String indicator, String url, int index) {
 		TabHost.TabSpec spec = mTabHost.newTabSpec(tabname);
 
 		View tabIndicator = LayoutInflater.from(this).inflate(R.layout.tabs_bg,
@@ -88,8 +89,11 @@ public class WebStoreActivity extends FragmentActivity implements
 		TextView title = (TextView) tabIndicator.findViewById(R.id.title);
 		title.setText(indicator);
 		spec.setIndicator(tabIndicator);
-
-		mTabsAdapter.addTab(spec, WebListFragment.class, null);
+		
+		Bundle args = new Bundle();
+		args.putString("URL", url);
+		args.putInt("index", index);
+		mTabsAdapter.addTab(spec, WebListFragment.class, args);
 	}
 
 	@Override
@@ -122,7 +126,8 @@ public class WebStoreActivity extends FragmentActivity implements
 					}
 				});
 			}
-			mUpdateProgress.setIndeterminate(true);
+			mUpdateProgress.setIndeterminate(false);
+			mUpdateProgress.setProgress(0);
 			showOverlay(mProgressOverlay);
 		}
 	}
@@ -159,7 +164,7 @@ public class WebStoreActivity extends FragmentActivity implements
 			return new AlertDialog.Builder(this)
 					.setTitle(getString(R.string.offline_title))
 					.setMessage(
-							getString(R.string.weblist_error) + " "
+							getString(R.string.weblist_error) + ". "
 									+ getString(R.string.offline))
 					.setPositiveButton(android.R.string.ok, null).create();
 		case Constants.DOWNLOAD_DOCLIST_ALERT:
@@ -220,11 +225,18 @@ public class WebStoreActivity extends FragmentActivity implements
 		args.putString("docname", document.getMeta().getFirstTitle());
 		this.getSupportLoaderManager().restartLoader(0, args, this);
 	}
+	
+	@Override
+	public int getActiveFragmentIndex(){
+		return mActiveFragmentIndex;
+	}
 
 	public void onCancelTasks() {
 		Loader<Object> load = this.getSupportLoaderManager().getLoader(0);
-		if (load != null && load.isStarted())
+		if (load != null && load.isStarted()){
+			hideOverlay(mProgressOverlay);
 			this.getSupportLoaderManager().getLoader(0).reset();
+		}
 	}
 
 	public void showOverlay(View overlay) {
@@ -242,7 +254,7 @@ public class WebStoreActivity extends FragmentActivity implements
 			overlay.setVisibility(View.GONE);
 		}
 	}
-	
+
 	@Override
 	public Loader<String> onCreateLoader(int id, Bundle args) {
 		String docID = args.getString("docid");
@@ -252,7 +264,7 @@ public class WebStoreActivity extends FragmentActivity implements
 
 	@Override
 	public void onLoadFinished(Loader<String> loader, String data) {
-		// TODO Auto-generated method stub
+		hideOverlay(mProgressOverlay);
 
 	}
 
@@ -261,8 +273,6 @@ public class WebStoreActivity extends FragmentActivity implements
 		// TODO Auto-generated method stub
 
 	}
-	
-	
 
 	/**
 	 * This is a helper class that implements the management of tabs and all
@@ -357,6 +367,7 @@ public class WebStoreActivity extends FragmentActivity implements
 		@Override
 		public void onPageSelected(int position) {
 			mTabHost.setCurrentTab(position);
+			((WebStoreActivity)this.mContext).mActiveFragmentIndex = position;
 		}
 
 		@Override
@@ -377,7 +388,6 @@ public class WebStoreActivity extends FragmentActivity implements
 			super(context);
 			fileID = docID;
 			filename = docName;
-			;
 		}
 
 		/**

@@ -35,7 +35,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class WebListFragment extends ListFragment implements
-		LoaderCallbacks<List<BookLink>>{
+		LoaderCallbacks<List<BookLink>> {
 
 	private ParentActivity mParent;
 	// This is the Adapter being used to display the list's data.
@@ -43,17 +43,20 @@ public class WebListFragment extends ListFragment implements
 
 	// If non-null, this is the current filter the user has provided.
 	String mCurFilter;
-	
+
+	String mURL;
+	int mIndex;
+
 	@Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        try {
-            mParent = (ParentActivity) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement ParentActivity");
-        }
-    }
-	
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		try {
+			mParent = (ParentActivity) activity;
+		} catch (ClassCastException e) {
+			throw new ClassCastException(activity.toString()
+					+ " must implement ParentActivity");
+		}
+	}
 
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
@@ -74,31 +77,36 @@ public class WebListFragment extends ListFragment implements
 		// Start out with a progress indicator.
 		setListShown(false);
 
+		mURL = this.getArguments().getString("URL");
+		mIndex = this.getArguments().getInt("index");
 		// Prepare the loader. Either re-connect with an existing one,
 		// or start a new one.
 		getLoaderManager().initLoader(0, null, this);
 	}
-
 
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		BookLink doc = this.mAdapter.getItem(position);
 		mParent.downloadDocument(doc);
 	}
-	
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.menu_refresh:
-			refreshList();
-			return true;
+			if (mParent.getActiveFragmentIndex() == mIndex) {
+				refreshList();
+				return true;
+			}
+			return false; // false so the rest fragments can receive the event
+							// [else only one will get it - the previous
+							// fragment from the current]
 		default:
-		return super.onOptionsItemSelected(item);
+			return super.onOptionsItemSelected(item);
 		}
 	}
 
-
-	public void setParent(ParentActivity activity){
+	public void setParent(ParentActivity activity) {
 		mParent = activity;
 	}
 
@@ -106,7 +114,7 @@ public class WebListFragment extends ListFragment implements
 	public Loader<List<BookLink>> onCreateLoader(int id, Bundle args) {
 		// This is called when a new Loader needs to be created. This
 		// sample only has one Loader with no arguments, so it is simple.
-		return new WebListLoader(getActivity());
+		return new WebListLoader(getActivity(), mURL);
 	}
 
 	@Override
@@ -114,7 +122,8 @@ public class WebListFragment extends ListFragment implements
 			List<BookLink> data) {
 		final WebListLoader wl = ((WebListLoader) loader);
 		switch (wl.getResultCode()) {
-		case Constants.OFFLINE: mParent.displayDialog(Constants.OFFLINE);
+		case Constants.OFFLINE:
+			mParent.displayDialog(Constants.OFFLINE);
 			break;
 		case Constants.HTTP_RESPONSE_OK: {
 			// Set the new data in the adapter.
@@ -139,12 +148,11 @@ public class WebListFragment extends ListFragment implements
 		// Clear the data in the adapter.
 		mAdapter.setData(null);
 	}
-	
+
 	public void refreshList() {
 		this.setListShown(false);
-		getLoaderManager().restartLoader(0,null, this);
+		getLoaderManager().restartLoader(0, null, this);
 	}
-
 
 	public static class WebListAdapter extends ArrayAdapter<BookLink> {
 		private final LayoutInflater mInflater;
@@ -237,15 +245,21 @@ public class WebListFragment extends ListFragment implements
 		private final static String TITLE = "titles";
 		private final static String SUBJECT = "subjects";
 		private final static String AUTHOR = "authors";
-		private final static String COVER = "coverPath";
+		private final static String AUTHOR_NAME = "firstname";
+		private final static String AUTHOR_LASTNAME = "lastname";
+		private final static String AUTHOR_RELATOR = "relator";
+		private final static String PUBLISHER = "publishers";
+		private final static String COVER = "coverUrl";
 		private final static String DOCLINK = "epubInfo";
 		private final static String DOCID = "id";
 
 		private List<BookLink> mLinks;
 		private int mResultCode;
+		private String mURL;
 
-		public WebListLoader(Context context) {
+		public WebListLoader(Context context, String URL) {
 			super(context);
+			mURL = URL;
 		}
 
 		/**
@@ -256,7 +270,8 @@ public class WebListFragment extends ListFragment implements
 		@Override
 		public List<BookLink> loadInBackground() {
 			List<BookLink> result = null;
-			RestClient client = new RestClient(Constants.URL);
+			RestClient client = new RestClient(this.mURL);
+			Log.d("client", mURL);
 			if (!Utils.isNetworkAvailable(this.getContext()))
 				mResultCode = Constants.OFFLINE;
 			else {
@@ -392,6 +407,10 @@ public class WebListFragment extends ListFragment implements
 				ArrayList<String> titles = null;
 				ArrayList<String> subjects = null;
 				String name = "";
+				String publisher = "";
+				String authName = "";
+				String authLast = "";
+				List<Author> authors = null;
 				boolean done = false;
 				while (type != XmlPullParser.END_DOCUMENT && !done) {
 					switch (type) {
@@ -404,17 +423,22 @@ public class WebListFragment extends ListFragment implements
 							currentItem = new BookLink();
 							titles = new ArrayList<String>();
 							subjects = new ArrayList<String>();
+							authors = new ArrayList<Author>();
 						} else if (currentItem != null) {
 							if (name.equalsIgnoreCase(TITLE)) {
 								titles.add(parser.nextText());
-							} else if (name.equalsIgnoreCase(AUTHOR)) {
-								// currentItem.getMeta().addAuthor(new
-								// Author(parser.nextText()));
+							} else if (name.equalsIgnoreCase(AUTHOR_NAME)) {
+								authName = parser.nextText();
+							} else if (name.equalsIgnoreCase(AUTHOR_LASTNAME)) {
+								authLast = parser.nextText();
+							} else if (name.equalsIgnoreCase(AUTHOR_RELATOR)) {
+								authors.add(new Author(authName, authLast));
+							} else if (name.equalsIgnoreCase(PUBLISHER)) {
+								publisher = parser.nextText();
 							} else if (name.equalsIgnoreCase(SUBJECT)) {
 								subjects.add(parser.nextText());
 							} else if (name.equalsIgnoreCase(COVER)) {
-								Resource cover = new Resource(parser.nextText());
-								currentItem.getMeta().setCoverImage(cover);
+								currentItem.setCoverUrl(parser.nextText());
 							} else if (name.equalsIgnoreCase(DOCID)) {
 								currentItem.setId(parser.nextText());
 							}
@@ -428,9 +452,11 @@ public class WebListFragment extends ListFragment implements
 							Metadata meta = new Metadata();
 							meta.setTitles(titles);
 							meta.setSubjects(subjects);
+							meta.addPublisher(publisher);
+							if (authors.size() > 0) {
+								meta.setAuthors(authors);
+							}
 							currentItem.setMeta(meta);
-							currentItem
-									.setCoverUrl("http://naturescrusaders.files.wordpress.com/2009/02/gex_green-sea-turtle.jpg"); // TODO:remove.
 							docs.add(currentItem);
 						} else if (name.equalsIgnoreCase("epubInfoes")) {
 							done = true;
@@ -451,6 +477,5 @@ public class WebListFragment extends ListFragment implements
 			return mResultCode;
 		}
 	}
-		
 
 }

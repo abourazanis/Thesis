@@ -6,5 +6,7 @@ public interface ParentActivity {
 	 void hideDialog(int dialogID);
 	 
 	 void downloadDocument(BookLink document);
+	 
+	 int getActiveFragmentIndex();
 
 }

@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
 import java.util.List;
 import java.util.Properties;
 
@@ -30,14 +31,17 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import thesis.drmReader.reader.ReaderView;
+import thesis.sec.Decrypter;
+
 import android.util.Log;
 
 public class ReaderUtils {
 
 	public static String getModifiedDocument(Book book, Resource resource,
-			int width, int height, String cacheDir)
+			int width, int height, String cacheDir, Decrypter decrypter)
 			throws UnsupportedEncodingException, SAXException, IOException,
-			ParserConfigurationException {
+			ParserConfigurationException, InvalidKeyException {
 		String result = null;
 		Document doc = ResourceUtil.getAsDocument(resource);
 
@@ -46,48 +50,57 @@ public class ReaderUtils {
 		 */
 		NodeList nodeList = doc.getElementsByTagName("*");
 
-		if (isCoverResource(resource,book)) {
-			Log.d("readerUtils","cover");
+		if (isCoverResource(resource, book)) {
+			Log.d("readerUtils", "cover");
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
 				if (node.getNodeType() == Document.ELEMENT_NODE) {
-					 if ("body".equalsIgnoreCase(node.getNodeName())) {
-							Element bodyElement = (Element) node;
-							NodeList bodyChildList = bodyElement.getChildNodes();
+					if ("body".equalsIgnoreCase(node.getNodeName())) {
+						Element bodyElement = (Element) node;
+						NodeList bodyChildList = bodyElement.getChildNodes();
 
-							Element divElement = doc.createElement("div");
-							divElement.setAttribute("id", "reader");
-							divElement.setAttribute("style", "width:" + width
-									+ "px; height:" + height
-									+ "px; border:none; overflow:hidden;padding:0;margin:0;");
+						Element divElement = doc.createElement("div");
+						divElement.setAttribute("id", "reader");
+						divElement
+								.setAttribute(
+										"style",
+										"width:"
+												+ width
+												+ "px; height:"
+												+ height
+												+ "px; border:none; overflow:hidden;padding:0;margin:0;");
 
-							for (int j = 0; j < bodyChildList.getLength(); j++) {
-								Node bodyChild = (Node) bodyChildList.item(j);
-								divElement.appendChild(bodyChild);
-							}
-
-							bodyElement.appendChild(divElement);
-
-							// 2. clear attributes
-							bodyElement.removeAttribute("xml:lang");
-							bodyElement.setAttribute("style",
-									"margin:0 0 10px 0;border:none; padding:0; line-height:1.5em;");
-
+						for (int j = 0; j < bodyChildList.getLength(); j++) {
+							Node bodyChild = (Node) bodyChildList.item(j);
+							divElement.appendChild(bodyChild);
 						}
-					 else if ("img".equalsIgnoreCase(node.getNodeName())) {
+
+						bodyElement.appendChild(divElement);
+
+						// 2. clear attributes
+						bodyElement.removeAttribute("xml:lang");
+						bodyElement
+								.setAttribute("style",
+										"margin:0 0 10px 0;border:none; padding:0; line-height:1.5em;");
+
+					} else if ("img".equalsIgnoreCase(node.getNodeName())) {
 						Element imgElement = (Element) node;
 
 						String imageRef = imgElement.getAttribute("src");
 						Resource imageResource = book.getResources().getByHref(
 								imageRef);
 
-						String destFile = cacheDir
-								+ imageResource.getId()
-								+ imageResource.getMediaType()
-										.getDefaultExtension();
-
+						String destFile = null;
 						if (imageResource != null) {
-							InputStream in = imageResource.getInputStream();
+							Resource imageResourceDec = decrypter
+									.decrypt(imageResource);
+
+							destFile = cacheDir
+									+ imageResourceDec.getId()
+									+ imageResourceDec.getMediaType()
+											.getDefaultExtension();
+
+							InputStream in = imageResourceDec.getInputStream();
 							OutputStream out = new FileOutputStream(destFile);
 							IOUtil.copy(in, out);
 						}
@@ -125,7 +138,6 @@ public class ReaderUtils {
 						addJavaScriptLink(doc, headElement,
 								"javascript/interface.js");
 
-
 					}
 					/*
 					 * <body> Element
@@ -152,9 +164,10 @@ public class ReaderUtils {
 
 						// 2. clear attributes
 						bodyElement.removeAttribute("xml:lang");
-						
-						bodyElement.setAttribute("style",
-								"margin:0 0 10px 0; padding:0; border:0;line-height:1.5em;");
+
+						bodyElement
+								.setAttribute("style",
+										"margin:0 0 10px 0; padding:0; border:0;line-height:1.5em;");
 
 					}
 					/*
@@ -169,18 +182,23 @@ public class ReaderUtils {
 						Resource imageResource = book.getResources().getByHref(
 								imageRef);
 
-						String destFile = cacheDir
-								+ imageResource.getId()
-								+ imageResource.getMediaType()
-										.getDefaultExtension();
-
+						String destFile = null;
 						if (imageResource != null) {
-							InputStream in = imageResource.getInputStream();
+							Resource imageResourceDec = decrypter
+									.decrypt(imageResource);
+
+							destFile = cacheDir
+									+ imageResourceDec.getId()
+									+ imageResourceDec.getMediaType()
+											.getDefaultExtension();
+
+							InputStream in = imageResourceDec.getInputStream();
 							OutputStream out = new FileOutputStream(destFile);
 							IOUtil.copy(in, out);
 						}
 						imgElement.setAttribute("src",
 								"content://thesis.drmReader.reader" + destFile);
+
 					} else if ("link".equalsIgnoreCase(node.getNodeName())) {
 						Element cssElement = (Element) node;
 						if (cssElement.getAttribute("rel").equalsIgnoreCase(
@@ -188,13 +206,19 @@ public class ReaderUtils {
 							String href = cssElement.getAttribute("href");
 							Resource cssResource = book.getResources()
 									.getByHref(href);
-							String destFile = cacheDir
-									+ cssResource.getId()
-									+ cssResource.getMediaType()
-											.getDefaultExtension();
+
+							String destFile = null;
 
 							if (cssResource != null) {
-								InputStream in = cssResource.getInputStream();
+								Resource cssResourceDec = decrypter
+										.decrypt(cssResource);
+								destFile = cacheDir
+										+ cssResourceDec.getId()
+										+ cssResourceDec.getMediaType()
+												.getDefaultExtension();
+
+								InputStream in = cssResourceDec
+										.getInputStream();
 								OutputStream out = new FileOutputStream(
 										destFile);
 								IOUtil.copy(in, out);
@@ -252,20 +276,21 @@ public class ReaderUtils {
 		headElement.appendChild(scriptElement);
 		headElement.appendChild(doc.createTextNode("\n"));
 	}
-	
-	public static boolean isCoverResource(Resource resource, Book book){
+
+	public static boolean isCoverResource(Resource resource, Book book) {
 		return resource.getId().equalsIgnoreCase(book.getCoverPage().getId());
 	}
-	
-	public static String getChapterName(Book book, Resource chapter){
-		List<TOCReference> tocTitles = book.getTableOfContents().getTocReferences();
+
+	public static String getChapterName(Book book, Resource chapter) {
+		List<TOCReference> tocTitles = book.getTableOfContents()
+				.getTocReferences();
 		String name = null;
-		 for(TOCReference ref : tocTitles){
-			 if(ref.getResourceId().equalsIgnoreCase(chapter.getId()))
-				 name  = ref.getTitle();
-		 }
-		
-		 return name;
+		for (TOCReference ref : tocTitles) {
+			if (ref.getResourceId().equalsIgnoreCase(chapter.getId()))
+				name = ref.getTitle();
+		}
+
+		return name;
 	}
 
 }

@@ -18,7 +18,7 @@ public class Constants {
 	public final static int DOWNLOAD_DOCUMENT_ALERT = 5;
 	
 	public static final int OFFLINE = 201;
-	public final static int HTTP_RESPONSE_OK = 202;
+	public final static int HTTP_RESPONSE_OK = 200;
 	
 	
 	//keys
@@ -26,6 +26,8 @@ public class Constants {
 	
 	
 	public final static String URL = "http://10.0.2.2:8080/thesis.server/rest/epubs";
+	public final static String URL_NEW = "http://10.0.2.2:8080/thesis.server/rest/epubs/new";
+	public final static String URL_TOP = "http://10.0.2.2:8080/thesis.server/rest/epubs/toppicks";
 	public final static String GETDOCURL = "http://10.0.2.2:8080/thesis.server/rest/epubs/";
 
 }

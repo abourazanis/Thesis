@@ -142,16 +142,12 @@ public class ArchiveListActivity extends FragmentActivity implements
 	}
 	
 	public void onStart() {
-   		// start tracing to “/sdcard/archiveList.trace”
-   		//Debug.startMethodTracing("archiveList");
 		super.onStart();
- 			// other start up code here…
        }
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		//Debug.stopMethodTracing();
 	}
 
 	@Override

@@ -16,6 +16,7 @@ import java.util.Stack;
 import java.util.WeakHashMap;
 
 import nl.siegmann.epublib.util.IOUtil;
+import nl.siegmann.epublib.util.StringUtil;
 
 import thesis.drmReader.R;
 import android.app.Activity;
@@ -26,11 +27,12 @@ import android.widget.ImageView;
 
 public class ImageLoader {
 
-	MemoryCache memoryCache=new MemoryCache();
-    FileCache fileCache;
-    private Map<ImageView, String> imageViews=Collections.synchronizedMap(new WeakHashMap<ImageView, String>());
-    
-	private final int stub_id = R.drawable.icon;
+	MemoryCache memoryCache = new MemoryCache();
+	FileCache fileCache;
+	private Map<ImageView, String> imageViews = Collections
+			.synchronizedMap(new WeakHashMap<ImageView, String>());
+
+	private final int stub_id = R.drawable.nocover;
 
 	public ImageLoader(Context context) {
 
@@ -38,41 +40,45 @@ public class ImageLoader {
 		// the UI performance
 		photoLoaderThread.setPriority(Thread.NORM_PRIORITY - 1);
 
-		fileCache=new FileCache(context, "coverDir");
+		fileCache = new FileCache(context, "coverDir");
 	}
 
-	public void DisplayImage(String url, InputStream stream,ImageView imageView) {
-		imageViews.put(imageView, url);
-        Bitmap bitmap=memoryCache.get(url);
-        if(bitmap!=null)
-            imageView.setImageBitmap(bitmap);
-        else
-        {
-            queuePhoto(url, stream,imageView);
-            imageView.setImageResource(stub_id);
-        } 
+	public void DisplayImage(String url, InputStream stream, ImageView imageView) {
+		if (StringUtil.isNotBlank(url)) {
+			imageViews.put(imageView, url);
+			Bitmap bitmap = memoryCache.get(url);
+			if (bitmap != null)
+				imageView.setImageBitmap(bitmap);
+			else {
+				queuePhoto(url, stream, imageView);
+				imageView.setImageResource(stub_id);
+			}
+		} else {
+			imageView.setImageResource(stub_id);
+		}
 	}
 
-	public void DisplayImage(String url,  ImageView imageView) {
+	public void DisplayImage(String url, ImageView imageView) {
 		DisplayImage(url, null, imageView);
 	}
 
 	private void queuePhoto(String url, InputStream stream, ImageView imageView) {
-		//This ImageView may be used for other images before. So there may be some old tasks in the queue. We need to discard them.
-        photosQueue.Clean(imageView);
-        PhotoToLoad p=new PhotoToLoad(url, stream, imageView);
-        synchronized(photosQueue.photosToLoad){
-            photosQueue.photosToLoad.push(p);
-            photosQueue.photosToLoad.notifyAll();
-        }
-        
-        //start thread if it's not started yet
-        if(photoLoaderThread.getState()==Thread.State.NEW)
-            photoLoaderThread.start();
+		// This ImageView may be used for other images before. So there may be
+		// some old tasks in the queue. We need to discard them.
+		photosQueue.Clean(imageView);
+		PhotoToLoad p = new PhotoToLoad(url, stream, imageView);
+		synchronized (photosQueue.photosToLoad) {
+			photosQueue.photosToLoad.push(p);
+			photosQueue.photosToLoad.notifyAll();
+		}
+
+		// start thread if it's not started yet
+		if (photoLoaderThread.getState() == Thread.State.NEW)
+			photoLoaderThread.start();
 	}
 
 	private Bitmap getBitmap(String url, InputStream stream) {
-		File f=fileCache.getFile(url);
+		File f = fileCache.getFile(url);
 
 		// from SD cache
 		Bitmap b = decodeFile(f);
@@ -195,9 +201,8 @@ public class ImageLoader {
 						Bitmap bmp = getBitmap(photoToLoad.url,
 								photoToLoad.stream);
 						memoryCache.put(photoToLoad.url, bmp);
-						String tag=imageViews.get(photoToLoad.imageView);
-						if (tag != null
-								&& tag.equals(photoToLoad.url)) {
+						String tag = imageViews.get(photoToLoad.imageView);
+						if (tag != null && tag.equals(photoToLoad.url)) {
 							BitmapDisplayer bd = new BitmapDisplayer(bmp,
 									photoToLoad.imageView);
 							Activity a = (Activity) photoToLoad.imageView
@@ -236,7 +241,7 @@ public class ImageLoader {
 
 	public void clearCache() {
 		memoryCache.clear();
-        fileCache.clear();
+		fileCache.clear();
 	}
 
 }
