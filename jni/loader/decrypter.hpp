@@ -1,12 +1,12 @@
 #ifndef DECRYPTER_HPP
 #define DECRYPTER_HPP
-
+#include <vector>
 
 
 class decrypter{
 
 public:
-	virtual unsigned char* decrypt(unsigned char* data, const char* id, int size);
+	virtual std::vector<unsigned char> decrypt(unsigned char* data, const char* id, int size);
 };
 
 // the types of the class factories

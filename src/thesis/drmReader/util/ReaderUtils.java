@@ -106,6 +106,35 @@ public class ReaderUtils {
 						}
 						imgElement.setAttribute("src",
 								"content://thesis.drmReader.reader" + destFile);
+					} else if ("link".equalsIgnoreCase(node.getNodeName())) {
+						Element cssElement = (Element) node;
+						if (cssElement.getAttribute("rel").equalsIgnoreCase(
+								"stylesheet")) {// yep we are in a css link
+							String href = cssElement.getAttribute("href");
+							Resource cssResource = book.getResources()
+									.getByHref(href);
+
+							String destFile = null;
+
+							if (cssResource != null) {
+								Resource cssResourceDec = decrypter
+										.decrypt(cssResource);
+								destFile = cacheDir
+										+ cssResourceDec.getId()
+										+ cssResourceDec.getMediaType()
+												.getDefaultExtension();
+
+								InputStream in = cssResourceDec
+										.getInputStream();
+								OutputStream out = new FileOutputStream(
+										destFile);
+								IOUtil.copy(in, out);
+							}
+							cssElement.setAttribute("href",
+									"content://thesis.drmReader.reader"
+											+ destFile);
+						}
+
 					}
 				}
 			}

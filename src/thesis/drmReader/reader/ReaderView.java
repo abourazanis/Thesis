@@ -1,5 +1,6 @@
 package thesis.drmReader.reader;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.Html;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -136,7 +138,8 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 		super.onCreate(savedInstanceState);
 
 		setUpUI();
-		cache = this.getCacheDir().getAbsolutePath() + "/readertmp";
+		cache = this.getCacheDir().getAbsolutePath() + "/readertmp/";
+		new File(cache).mkdirs();
 
 		Bundle extras = getIntent().getExtras();
 		if (extras == null) {
@@ -565,6 +568,7 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 						displayHeight, cache, ((ReaderView)this.getCallingContext()).decrypter);
 
 			return htmlContent;
+			
 		}
 		
 	}
@@ -685,7 +689,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	private void refreshPage() {
 		tvChapter.setText(ReaderUtils.getChapterName(currentDoc,
 				navigator.getCurrentResource()));
-		Log.d(TAG, "Tit: " + navigator.getCurrentResource().getTitle());
 		tvPages.setText(String.valueOf(mCurPage) + "/"
 				+ String.valueOf(mMaxPage));
 	}

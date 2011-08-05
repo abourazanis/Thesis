@@ -1,8 +1,8 @@
+#include "decrypter.hpp"
 #include <string.h>
 #include <fstream>
 #include <jni.h>
 #include <android/log.h>
-#include "decrypter.hpp"
 #include <dlfcn.h>
 
 using namespace std;
@@ -51,11 +51,11 @@ extern "C" {
 
       jsize dataSize = env->GetArrayLength( data );
       jbyte* dataBytes = env->GetByteArrayElements( data, JNI_FALSE );//we retrieve a reference to the java element.Not copy
-      unsigned char* resData;
+      vector<unsigned char> resData;
       
       resData = decrypter->decrypt((unsigned char*)dataBytes,deviceKey, dataSize);
       
-      if(resData == NULL){
+      if(resData.empty()){
 	if(throwExc != 0){
 	  env->CallVoidMethod(obj, throwExc);
 	}
@@ -69,8 +69,16 @@ extern "C" {
 	return NULL;
       }
       
-      jbyteArray bArray = env->NewByteArray(dataSize);
-      env-> SetByteArrayRegion( bArray, 0, dataSize, (jbyte*)resData);
+      jbyteArray bArray = env->NewByteArray(resData.size());
+      
+      unsigned char arr[resData.size()];
+      int i = 0;
+      int resSize = resData.size();
+      for(i=0;i<resSize;i++){
+	arr[i] = resData[i];
+      }
+
+      env-> SetByteArrayRegion( bArray, 0, resData.size(), (jbyte*)arr);
       
       env->ReleaseByteArrayElements(data,dataBytes,JNI_ABORT); //commit changes back to java copy
       return bArray;
