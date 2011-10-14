@@ -22,11 +22,12 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
+import android.support.v4.app.SupportActivity;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.view.MenuItem;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -48,7 +49,7 @@ public class WebListFragment extends ListFragment implements
 	int mIndex;
 
 	@Override
-	public void onAttach(Activity activity) {
+	public void onAttach(SupportActivity activity) {
 		super.onAttach(activity);
 		try {
 			mParent = (ParentActivity) activity;
