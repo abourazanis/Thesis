@@ -29,5 +29,6 @@ public class Constants {
 	public final static String URL_NEW = "http://10.0.2.2:8080/thesis.server/rest/epubs/new";
 	public final static String URL_TOP = "http://10.0.2.2:8080/thesis.server/rest/epubs/toppicks";
 	public final static String GETDOCURL = "http://10.0.2.2:8080/thesis.server/rest/epubs/";
+	public final static String COVERS_URL = "http://10.0.2.2:8080/thesis.server/epubs";
 
 }

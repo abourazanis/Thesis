@@ -1,5 +1,6 @@
 package thesis.drmReader.ui;
 
+import thesis.drmReader.util.Constants;
 import nl.siegmann.epublib.domain.Metadata;
 
 
@@ -39,7 +40,7 @@ public class BookLink {
 	}
 
 	public String getCoverUrl() {
-		return coverUrl;
+		return Constants.COVERS_URL + coverUrl;
 	}
 
 	public void setCoverUrl(String coverUrl) {
