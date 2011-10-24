@@ -429,6 +429,9 @@ public class WebStoreActivity extends FragmentActivity implements
 							.getApplicationContext(), coverResource.getData(),
 							meta.getFirstTitle());
 					EpubsDatabase.addEpub(epubLink, this.getContext());
+					
+					// renew FTS3 table
+			        EpubsDatabase.onRenewFTSTable(this.getContext());
 				}
 			} catch (Exception e) {
 				e.printStackTrace();

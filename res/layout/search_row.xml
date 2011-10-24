@@ -8,30 +8,31 @@
 	android:id="@+id/search_epubTitle"
 	android:layout_width="wrap_content" 
 	android:layout_marginLeft="5dp"
-	android:layout_marginTop="10dp">
+	android:layout_marginTop="10dp"
+	style="@style/ListTitle">
 	</TextView>
 	<TextView android:paddingLeft="5dp"
 		android:paddingRight="5dp"
 		android:layout_height="wrap_content" 
 		android:id="@+id/search_epubAuthor" 
-		android:layout_width="wrap_content"
-		style="@style/ListTitle"></TextView>
+		android:layout_width="wrap_content"></TextView>
     <RelativeLayout
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
     	android:layout_height="wrap_content"
     	android:layout_marginBottom="5dp">
-	    <TextView android:id="@+id/search_language"
-	    	style="@style/SmallFont"
-	        android:layout_width="wrap_content"
-	       	android:layout_height="wrap_content"
-	       	android:layout_marginLeft="5dp"
-	       	android:layout_toRightOf="@id/search_epubAuthor"/>
 	    <TextView android:id="@+id/search_publishers"
 	    	style="@style/SmallFont"
 	 	    android:layout_width="wrap_content"
 	       	android:layout_height="wrap_content"
-	       	android:layout_marginLeft="10dp"
-	       	 android:layout_toRightOf="@id/search_epubAuthor"/>
+	       	android:layout_marginRight="10dp"
+	       	android:layout_marginLeft="5dp"
+	       	android:layout_below="@id/search_epubAuthor"/>
+	    <TextView android:id="@+id/search_language"
+	    	style="@style/SmallFont"
+	        android:layout_width="wrap_content"
+	       	android:layout_height="wrap_content"
+	       	android:layout_marginRight="5dp"
+	       	android:layout_toRightOf="@+id/search_publishers"/>
 	   	</RelativeLayout>	
 	<TextView 
 	android:paddingLeft="5dp" 

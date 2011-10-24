@@ -5,6 +5,7 @@ import thesis.drmReader.db.EpubsContract.EpubSearchColumns;
 import thesis.drmReader.db.EpubsContract.Epubs;
 import thesis.drmReader.db.EpubsContract.EpubsColumns;
 import thesis.drmReader.db.EpubsContract.Publishers;
+import thesis.drmReader.ui.EpubsSearchActivity.SearchQuery;
 import android.app.SearchManager;
 import android.content.Context;
 import android.database.Cursor;
@@ -151,10 +152,10 @@ public class DrmReaderDataBase extends SQLiteOpenHelper {
 		 * publishers_id = pubID
 		 */
 
-		return db.rawQuery("select " + Epubs._ID + ",epubdescription,"
-				+ Epubs.TITLE + "," + Epubs.SUBJECT + "," + Epubs.LANGUAGE
-				+ "," + Authors.FIRSTNAME + "," + Authors.LASTNAME + ",publisherName from " + " (select rowid, snippet("
-				+ Tables.EPUBS_SEARCH + ") as epubdescription" + " from "
+		return db.rawQuery("select " + SearchQuery._ID + "," + SearchQuery.DESCRIPTION + ","
+				+ SearchQuery.TITLE + "," + SearchQuery.SUBJECT + "," + SearchQuery.LANGUAGE
+				+ "," + SearchQuery.AUTH_FIRSTNAME + "," + SearchQuery.AUTH_LASTNAME + "," + SearchQuery.PUBLISHER + " from " + " (select rowid, snippet("
+				+ Tables.EPUBS_SEARCH + ") as " + SearchQuery.DESCRIPTION + " from "
 				+ Tables.EPUBS_SEARCH + " where " + Tables.EPUBS_SEARCH
 				+ " match ?)" + " join (select  " + Epubs._ID + ","
 				+ Epubs.TITLE + "," + Epubs.SUBJECT + "," + Epubs.DESCRIPTION
