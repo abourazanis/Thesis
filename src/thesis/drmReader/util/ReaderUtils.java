@@ -109,7 +109,7 @@ public class ReaderUtils {
 					} else if ("link".equalsIgnoreCase(node.getNodeName())) {
 						Element cssElement = (Element) node;
 						if (cssElement.getAttribute("rel").equalsIgnoreCase(
-								"stylesheet")) {// yep we are in a css link
+								"stylesheet")) {// we are in a css link
 							String href = cssElement.getAttribute("href");
 							Resource cssResource = book.getResources()
 									.getByHref(href);

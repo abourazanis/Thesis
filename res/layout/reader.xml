@@ -14,32 +14,35 @@
 		<WebView 
 			android:id="@+id/webView"
 			android:layout_width="fill_parent"
-			android:layout_height="fill_parent" />
+			android:layout_height="fill_parent"/>
 			
 		<!-- Tail Infos -->
 		<FrameLayout
 			android:layout_width="fill_parent"
 			android:layout_height="22dp"
 			android:layout_gravity="bottom">
+
 			<TextView
-				android:id="@+id/tvChapter"
-				android:layout_width="200dp"
-				android:layout_height="fill_parent"
-				android:layout_gravity="left"
-				android:layout_marginLeft="10dp"
-				android:layout_marginBottom="5dp"
-				android:ellipsize="marquee"
-				android:lines="1"
-				android:textSize="5pt" />
+			    android:id="@+id/tvChapter"
+			    android:layout_width="200dp"
+			    android:layout_height="fill_parent"
+			    android:layout_gravity="left"
+			    android:layout_marginLeft="10dp"
+			    android:layout_marginTop="8dp"
+			    android:ellipsize="marquee"
+			    android:lines="1"
+			    android:textSize="4pt" />
+
 			<TextView
-				android:id="@+id/tvPages"
-				android:layout_width="80dp"
-				android:layout_height="fill_parent"
-				android:layout_gravity="right"
-				android:layout_marginRight="10dp"
-				android:layout_marginBottom="5dp"
-				android:gravity="right"
-				android:textSize="5pt" />
+			    android:id="@+id/tvPages"
+			    android:layout_width="80dp"
+			    android:layout_height="fill_parent"
+			    android:layout_gravity="right"
+			    android:layout_marginRight="10dp"
+			    android:layout_marginTop="8dp"
+			    android:gravity="right"
+			    android:textSize="4pt" />
+
 		</FrameLayout>
 	</FrameLayout>
 

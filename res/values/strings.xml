@@ -16,7 +16,7 @@
     <string name="current_dir">.</string>
     <string name="cancel">cancel</string>
     <string name="search_hint">Search epubs</string>
-	<string name="search_title">Matching epubs</string>
+	<string name="search_title">Results:</string>
 	<string name="search_description">Epubs</string>
 	<string name="no_results">Could not find any results. Try complete words.</string>
     <string name="sort">Sort by</string>

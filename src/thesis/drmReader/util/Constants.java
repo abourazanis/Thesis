@@ -16,6 +16,7 @@ public class Constants {
 	public final static int DOWNLOAD_DOCLIST = 3;
 	public final static int DOWNLOAD_DOCLIST_ALERT = 4;
 	public final static int DOWNLOAD_DOCUMENT_ALERT = 5;
+	public final static int SEARCH_DOCUMENTS = 6;
 	
 	public static final int OFFLINE = 201;
 	public final static int HTTP_RESPONSE_OK = 200;

@@ -2,11 +2,6 @@ package thesis.drmReader.ui;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EventListener;
-import java.util.EventObject;
-import java.util.Iterator;
-import java.util.List;
 
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
@@ -25,7 +20,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.DialogInterface.OnClickListener;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -44,6 +38,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
 import android.widget.TabHost;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class WebStoreActivity extends FragmentActivity implements
 		ParentActivity, LoaderCallbacks<String> {
@@ -71,9 +66,9 @@ public class WebStoreActivity extends FragmentActivity implements
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 
 		mTabsAdapter = new TabsAdapter(this, mTabHost, mViewPager);
-		addTab("new", "New", Constants.URL_NEW,0);
-		addTab("toppicks", "Top Picks", Constants.URL_TOP,1);
-		addTab("all", "All", Constants.URL,2);
+		addTab("new", "New", Constants.URL_NEW, 0);
+		addTab("toppicks", "Top Picks", Constants.URL_TOP, 1);
+		addTab("all", "All", Constants.URL, 2);
 
 		if (savedInstanceState != null) {
 			mTabHost.setCurrentTabByTag(savedInstanceState.getString("tab"));
@@ -89,7 +84,7 @@ public class WebStoreActivity extends FragmentActivity implements
 		TextView title = (TextView) tabIndicator.findViewById(R.id.title);
 		title.setText(indicator);
 		spec.setIndicator(tabIndicator);
-		
+
 		Bundle args = new Bundle();
 		args.putString("URL", url);
 		args.putInt("index", index);
@@ -202,38 +197,46 @@ public class WebStoreActivity extends FragmentActivity implements
 
 	@Override
 	public void downloadDocument(BookLink document) {
-		if (mProgressOverlay == null) {
-			mProgressOverlay = ((ViewStub) findViewById(R.id.stub_update))
-					.inflate();
-			mUpdateProgress = (ProgressBar) findViewById(R.id.ProgressBarShowListDet);
+		Loader<Object> load = this.getSupportLoaderManager().getLoader(0);
+		if (load != null && load.isStarted()) {
+			Toast.makeText(
+					this,
+					"There is a file download already in progress.Please wait to finish and try again",
+					Toast.LENGTH_LONG).show();
+		} else {
+			if (mProgressOverlay == null) {
+				mProgressOverlay = ((ViewStub) findViewById(R.id.stub_update))
+						.inflate();
+				mUpdateProgress = (ProgressBar) findViewById(R.id.ProgressBarShowListDet);
 
-			final View cancelButton = mProgressOverlay
-					.findViewById(R.id.overlayCancel);
-			cancelButton.setOnClickListener(new View.OnClickListener() {
-				public void onClick(View v) {
-					onCancelTasks();
-				}
-			});
+				final View cancelButton = mProgressOverlay
+						.findViewById(R.id.overlayCancel);
+				cancelButton.setOnClickListener(new View.OnClickListener() {
+					public void onClick(View v) {
+						onCancelTasks();
+					}
+				});
+			}
+
+			mUpdateProgress.setIndeterminate(true);
+			// mUpdateProgress.setProgress(0);
+			showOverlay(mProgressOverlay);
+
+			Bundle args = new Bundle();
+			args.putString("docid", document.getId());
+			args.putString("docname", document.getMeta().getFirstTitle());
+			this.getSupportLoaderManager().restartLoader(0, args, this);
 		}
-
-		mUpdateProgress.setIndeterminate(true);
-		// mUpdateProgress.setProgress(0);
-		showOverlay(mProgressOverlay);
-
-		Bundle args = new Bundle();
-		args.putString("docid", document.getId());
-		args.putString("docname", document.getMeta().getFirstTitle());
-		this.getSupportLoaderManager().restartLoader(0, args, this);
 	}
-	
+
 	@Override
-	public int getActiveFragmentIndex(){
+	public int getActiveFragmentIndex() {
 		return mActiveFragmentIndex;
 	}
 
 	public void onCancelTasks() {
 		Loader<Object> load = this.getSupportLoaderManager().getLoader(0);
-		if (load != null && load.isStarted()){
+		if (load != null && load.isStarted()) {
 			hideOverlay(mProgressOverlay);
 			this.getSupportLoaderManager().getLoader(0).reset();
 		}
@@ -270,7 +273,6 @@ public class WebStoreActivity extends FragmentActivity implements
 
 	@Override
 	public void onLoaderReset(Loader<String> loader) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -367,7 +369,7 @@ public class WebStoreActivity extends FragmentActivity implements
 		@Override
 		public void onPageSelected(int position) {
 			mTabHost.setCurrentTab(position);
-			((WebStoreActivity)this.mContext).mActiveFragmentIndex = position;
+			((WebStoreActivity) this.mContext).mActiveFragmentIndex = position;
 		}
 
 		@Override
@@ -429,9 +431,9 @@ public class WebStoreActivity extends FragmentActivity implements
 							.getApplicationContext(), coverResource.getData(),
 							meta.getFirstTitle());
 					EpubsDatabase.addEpub(epubLink, this.getContext());
-					
+
 					// renew FTS3 table
-			        EpubsDatabase.onRenewFTSTable(this.getContext());
+					EpubsDatabase.onRenewFTSTable(this.getContext());
 				}
 			} catch (Exception e) {
 				e.printStackTrace();

@@ -36,13 +36,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.Html;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.Menu;
+import android.support.v4.view.MenuItem;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
@@ -58,7 +58,7 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-public class ReaderView extends Activity implements SimpleGestureListener,
+public class ReaderView extends FragmentActivity implements SimpleGestureListener,
 		OnChangedListener, NavigationEventListener {
 
 	static class DisplayInfo {
@@ -188,9 +188,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 	@SuppressWarnings("deprecation")
 	private void setUpUI() {
 		setContentView(R.layout.reader);
-
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB)
-			getActionBar().hide();
 
 		webView = (WebView) findViewById(R.id.webView);
 		// tail infos (chapter, pages)
@@ -529,7 +526,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 		@Override
 		protected void before(Context context) {
-			// TODO Auto-generated method stub
 			
 		}
 
@@ -552,7 +548,6 @@ public class ReaderView extends Activity implements SimpleGestureListener,
 
 		@Override
 		protected void onCancel(Context context) {
-			// TODO Auto-generated method stub
 			
 		}
 		
