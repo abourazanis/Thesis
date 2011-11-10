@@ -23,8 +23,6 @@ import android.net.Uri;
 
 public class DrmReaderProvider extends ContentProvider {
 
-	private static final String TAG = "DrmReaderProvider";
-
 	private static final UriMatcher sUriMatcher = buildUriMatcher();
 	public static final int EPUBS = 100;
 	public static final int EPUBS_ID = 101;

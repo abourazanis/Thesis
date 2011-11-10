@@ -30,7 +30,6 @@ import android.support.v4.content.Loader;
 import android.support.v4.view.Menu;
 import android.support.v4.view.MenuItem;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewStub;
@@ -219,7 +218,6 @@ public class WebStoreActivity extends FragmentActivity implements
 			}
 
 			mUpdateProgress.setIndeterminate(true);
-			// mUpdateProgress.setProgress(0);
 			showOverlay(mProgressOverlay);
 
 			Bundle args = new Bundle();
@@ -268,6 +266,7 @@ public class WebStoreActivity extends FragmentActivity implements
 	@Override
 	public void onLoadFinished(Loader<String> loader, String data) {
 		hideOverlay(mProgressOverlay);
+		loader.stopLoading();
 
 	}
 
@@ -377,9 +376,7 @@ public class WebStoreActivity extends FragmentActivity implements
 		}
 	}
 
-	/**
-	 * A custom Loader that loads all of the installed applications.
-	 */
+	
 	public static class EpubDownloader extends AsyncTaskLoader<String> {
 
 		private String mResult;

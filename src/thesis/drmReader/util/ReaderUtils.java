@@ -31,7 +31,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import thesis.drmReader.reader.ReaderView;
 import thesis.sec.Decrypter;
 
 import android.util.Log;
@@ -109,7 +108,8 @@ public class ReaderUtils {
 					} else if ("link".equalsIgnoreCase(node.getNodeName())) {
 						Element cssElement = (Element) node;
 						if (cssElement.getAttribute("rel").equalsIgnoreCase(
-								"stylesheet")) {// we are in a css link
+								"stylesheet")) {
+						    // we are in a css link
 							String href = cssElement.getAttribute("href");
 							Resource cssResource = book.getResources()
 									.getByHref(href);
@@ -231,7 +231,8 @@ public class ReaderUtils {
 					} else if ("link".equalsIgnoreCase(node.getNodeName())) {
 						Element cssElement = (Element) node;
 						if (cssElement.getAttribute("rel").equalsIgnoreCase(
-								"stylesheet")) {// yep we are in a css link
+								"stylesheet")) {
+						    // we are in a css link
 							String href = cssElement.getAttribute("href");
 							Resource cssResource = book.getResources()
 									.getByHref(href);
@@ -270,7 +271,6 @@ public class ReaderUtils {
 
 		Properties oprops = new Properties();
 		oprops.put(OutputKeys.METHOD, "html");
-		// oprops.put("indent-amount", "4");
 
 		TransformerFactory tf = TransformerFactory.newInstance();
 		Transformer trans = null;

@@ -65,7 +65,7 @@ extern "C" {
 	dlclose(dec);
 	env->ReleaseStringUTFChars(devK , deviceKey); // release jstring
 	//free(dataBytes);
-	env->ReleaseByteArrayElements(data,dataBytes,JNI_ABORT); //commit changes back to java copy
+	env->ReleaseByteArrayElements(data,dataBytes,JNI_ABORT);
 	return NULL;
       }
       
@@ -80,7 +80,7 @@ extern "C" {
 
       env-> SetByteArrayRegion( bArray, 0, resData.size(), (jbyte*)arr);
       
-      env->ReleaseByteArrayElements(data,dataBytes,JNI_ABORT); //commit changes back to java copy
+      env->ReleaseByteArrayElements(data,dataBytes,JNI_ABORT);
       return bArray;
     }
     // destroy the class

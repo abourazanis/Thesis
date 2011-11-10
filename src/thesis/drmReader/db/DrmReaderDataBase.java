@@ -50,6 +50,9 @@ public class DrmReaderDataBase extends SQLiteOpenHelper {
 				+ BaseColumns._ID + ")";
 	}
 
+	/**
+	 * table creation queries
+	 */
 	private static final String CREATE_TABLE_EPUBS = "CREATE TABLE "
 			+ Tables.EPUBS + " ( " + Epubs._ID
 			+ " INTEGER PRIMARY KEY AUTOINCREMENT, " + Epubs.TITLE

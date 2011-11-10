@@ -449,8 +449,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 				viewHolder = (ViewHolder) convertView.getTag();
 			}
 			
-			//we use exlipcit column index values because getColumnIndexOrThrow was CPU hungry
-
+			//we use explicit column index values because getColumnIndexOrThrow was CPU hungry
 			String title = mCursor.getString(EpubsQuery.TITLE);
 			viewHolder.textViewTitle.setText(title);
 			viewHolder.textViewAuthor.setText(mCursor.getString(EpubsQuery.FIRSTNAME)

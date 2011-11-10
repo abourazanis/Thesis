@@ -1,6 +1,8 @@
 package thesis.imageLazyLoader;
 
-//based on http://stackoverflow.com/questions/541966/android-how-do-i-do-a-lazy-load-of-images-in-listview/3068012#3068012
+/*
+ * based on http://stackoverflow.com/questions/541966/android-how-do-i-do-a-lazy-load-of-images-in-listview/3068012#3068012
+ */
 
 import java.io.File;
 import java.io.FileInputStream;

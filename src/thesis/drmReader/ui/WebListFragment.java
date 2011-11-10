@@ -1,3 +1,4 @@
+
 package thesis.drmReader.ui;
 
 import java.io.InputStream;
@@ -6,7 +7,6 @@ import java.util.List;
 
 import nl.siegmann.epublib.domain.Author;
 import nl.siegmann.epublib.domain.Metadata;
-import nl.siegmann.epublib.domain.Resource;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -17,7 +17,6 @@ import thesis.drmReader.RestClient.RequestMethod;
 import thesis.drmReader.util.Constants;
 import thesis.drmReader.util.Utils;
 import thesis.imageLazyLoader.ImageLoader;
-import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
@@ -35,448 +34,454 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class WebListFragment extends ListFragment implements
-		LoaderCallbacks<List<BookLink>> {
+public class WebListFragment extends ListFragment implements LoaderCallbacks<List<BookLink>> {
 
-	private ParentActivity mParent;
-	// This is the Adapter being used to display the list's data.
-	WebListAdapter mAdapter;
+    private ParentActivity mParent;
 
-	// If non-null, this is the current filter the user has provided.
-	String mCurFilter;
+    // This is the Adapter being used to display the list's data.
+    WebListAdapter mAdapter;
 
-	String mURL;
-	int mIndex;
+    // If non-null, this is the current filter the user has provided.
+    String mCurFilter;
 
-	@Override
-	public void onAttach(SupportActivity activity) {
-		super.onAttach(activity);
-		try {
-			mParent = (ParentActivity) activity;
-		} catch (ClassCastException e) {
-			throw new ClassCastException(activity.toString()
-					+ " must implement ParentActivity");
-		}
-	}
+    String mURL;
 
-	@Override
-	public void onActivityCreated(Bundle savedInstanceState) {
-		super.onActivityCreated(savedInstanceState);
+    int mIndex;
 
-		// Give some text to display if there is no data. In a real
-		// application this would come from a resource.
-		setEmptyText("No epubs");
-		setRetainInstance(true);
+    @Override
+    public void onAttach(SupportActivity activity) {
+        super.onAttach(activity);
+        try {
+            mParent = (ParentActivity) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString() + " must implement ParentActivity");
+        }
+    }
 
-		// We have a menu item to show in action bar.
-		setHasOptionsMenu(true);
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
 
-		// Create an empty adapter we will use to display the loaded data.
-		mAdapter = new WebListAdapter(getActivity(), R.layout.list_item);
-		setListAdapter(mAdapter);
+        // Give some text to display if there is no data. In a real
+        // application this would come from a resource.
+        setEmptyText("No epubs");
+        setRetainInstance(true);
 
-		// Start out with a progress indicator.
-		setListShown(false);
+        // We have a menu item to show in action bar.
+        setHasOptionsMenu(true);
 
-		mURL = this.getArguments().getString("URL");
-		mIndex = this.getArguments().getInt("index");
-		// Prepare the loader. Either re-connect with an existing one,
-		// or start a new one.
-		getLoaderManager().initLoader(0, null, this);
-	}
+        // Create an empty adapter we will use to display the loaded data.
+        mAdapter = new WebListAdapter(getActivity(), R.layout.list_item);
+        setListAdapter(mAdapter);
 
-	@Override
-	public void onListItemClick(ListView l, View v, int position, long id) {
-		BookLink doc = this.mAdapter.getItem(position);
-		mParent.downloadDocument(doc);
-	}
+        // Start out with a progress indicator.
+        setListShown(false);
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.menu_refresh:
-			if (mParent.getActiveFragmentIndex() == mIndex) {
-				refreshList();
-				return true;
-			}
-			return false; // false so the rest fragments can receive the event
-							// [else only one will get it - the previous
-							// fragment from the current]
-		default:
-			return super.onOptionsItemSelected(item);
-		}
-	}
+        mURL = this.getArguments().getString("URL");
+        mIndex = this.getArguments().getInt("index");
+        // Prepare the loader. Either re-connect with an existing one,
+        // or start a new one.
+        getLoaderManager().initLoader(0, null, this);
+    }
 
-	public void setParent(ParentActivity activity) {
-		mParent = activity;
-	}
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        BookLink doc = this.mAdapter.getItem(position);
+        mParent.downloadDocument(doc);
+    }
 
-	@Override
-	public Loader<List<BookLink>> onCreateLoader(int id, Bundle args) {
-		// This is called when a new Loader needs to be created. This
-		// sample only has one Loader with no arguments, so it is simple.
-		return new WebListLoader(getActivity(), mURL);
-	}
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_refresh:
+                if (mParent.getActiveFragmentIndex() == mIndex) {
+                    refreshList();
+                    return true;
+                }
+                return false; // false so the rest fragments can receive the
+                              // event
+                              // [else only one will get it - the previous
+                              // fragment from the current]
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 
-	@Override
-	public void onLoadFinished(Loader<List<BookLink>> loader,
-			List<BookLink> data) {
-		final WebListLoader wl = ((WebListLoader) loader);
-		switch (wl.getResultCode()) {
-		case Constants.OFFLINE:
-			mParent.displayDialog(Constants.OFFLINE);
-			break;
-		case Constants.HTTP_RESPONSE_OK: {
-			// Set the new data in the adapter.
-			mAdapter.setData(data);
-		}
-			break;
-		default:// error
-			mParent.displayDialog(Constants.DOWNLOAD_DOCLIST_ALERT);
+    public void setParent(ParentActivity activity) {
+        mParent = activity;
+    }
 
-		}
+    @Override
+    public Loader<List<BookLink>> onCreateLoader(int id, Bundle args) {
+        // This is called when a new Loader needs to be created. This
+        // sample only has one Loader with no arguments, so it is simple.
+        return new WebListLoader(getActivity(), mURL);
+    }
 
-		// The list should now be shown.
-		if (isResumed()) {
-			setListShown(true);
-		} else {
-			setListShownNoAnimation(true);
-		}
-	}
+    @Override
+    public void onLoadFinished(Loader<List<BookLink>> loader, List<BookLink> data) {
+        final WebListLoader wl = ((WebListLoader) loader);
+        switch (wl.getResultCode()) {
+            case Constants.OFFLINE:
+                mParent.displayDialog(Constants.OFFLINE);
+                break;
+            case Constants.HTTP_RESPONSE_OK: {
+                // Set the new data in the adapter.
+                mAdapter.setData(data);
+            }
+                break;
+            default:// error
+                mParent.displayDialog(Constants.DOWNLOAD_DOCLIST_ALERT);
 
-	@Override
-	public void onLoaderReset(Loader<List<BookLink>> loader) {
-		// Clear the data in the adapter.
-		mAdapter.setData(null);
-	}
+        }
 
-	public void refreshList() {
-		this.setListShown(false);
-		getLoaderManager().restartLoader(0, null, this);
-	}
+        // The list should now be shown.
+        if (isResumed()) {
+            setListShown(true);
+        } else {
+            setListShownNoAnimation(true);
+        }
+    }
 
-	public static class WebListAdapter extends ArrayAdapter<BookLink> {
-		private final LayoutInflater mInflater;
-		private final int mLayout;
-		public ImageLoader imageLoader;
+    @Override
+    public void onLoaderReset(Loader<List<BookLink>> loader) {
+        // Clear the data in the adapter.
+        mAdapter.setData(null);
+    }
 
-		public WebListAdapter(Context context, int layout) {
-			super(context, layout);
-			mInflater = (LayoutInflater) context
-					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			mLayout = layout;
-			imageLoader = new ImageLoader(context);
-		}
+    public void refreshList() {
+        this.setListShown(false);
+        getLoaderManager().restartLoader(0, null, this);
+    }
 
-		public void setData(List<BookLink> data) {
-			clear();
-			if (data != null) {
-				for (BookLink item : data) {
-					add(item);
-				}
-			}
-		}
+    public static class WebListAdapter extends ArrayAdapter<BookLink> {
+        private final LayoutInflater mInflater;
 
-		public final class ViewHolder {
+        private final int mLayout;
 
-			public ImageView imageView;
-			public TextView textViewTitle;
-			public TextView textViewAuthor;
-			public TextView textViewLanguage;
-			public TextView textViewPublisher;
-		}
+        public ImageLoader imageLoader;
 
-		/**
-		 * Populate new items in the list.
-		 */
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			ViewHolder viewHolder;
+        public WebListAdapter(Context context, int layout) {
+            super(context, layout);
+            mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            mLayout = layout;
+            imageLoader = new ImageLoader(context);
+        }
 
-			if (convertView == null) {
-				convertView = mInflater.inflate(mLayout, null);
+        public void setData(List<BookLink> data) {
+            clear();
+            if (data != null) {
+                for (BookLink item : data) {
+                    add(item);
+                }
+            }
+        }
 
-				viewHolder = new ViewHolder();
-				viewHolder.imageView = (ImageView) convertView
-						.findViewById(R.id.epubCover);
-				viewHolder.textViewTitle = (TextView) convertView
-						.findViewById(R.id.epubTitle);
-				viewHolder.textViewAuthor = (TextView) convertView
-						.findViewById(R.id.epubAuthor);
-				viewHolder.textViewLanguage = (TextView) convertView
-						.findViewById(R.id.epubLanguage);
-				viewHolder.textViewPublisher = (TextView) convertView
-						.findViewById(R.id.epubPublisher);
+        public final class ViewHolder {
 
-				convertView.setTag(viewHolder);
-			} else {
-				viewHolder = (ViewHolder) convertView.getTag();
-			}
+            public ImageView imageView;
 
-			BookLink doc = this.getItem(position);
-			if (doc != null) {
+            public TextView textViewTitle;
 
-				Metadata meta = doc.getMeta();
-				Author author = meta.getAuthors().size() > 0 ? meta
-						.getAuthors().get(0) : null;
-				String publisher = meta.getPublishers().size() > 0 ? meta
-						.getPublishers().get(0) : null;
+            public TextView textViewAuthor;
 
-				imageLoader.DisplayImage(doc.getCoverUrl(),
-						viewHolder.imageView);
-				viewHolder.textViewTitle.setText(meta.getFirstTitle());
-				viewHolder.textViewLanguage.setText(meta.getLanguage());
+            public TextView textViewLanguage;
 
-				if (publisher != null)
-					viewHolder.textViewPublisher.setText(publisher);
-				if (author != null)
-					viewHolder.textViewAuthor.setText(author.getFirstname()
-							+ " " + author.getLastname());
-			}
+            public TextView textViewPublisher;
+        }
 
-			return convertView;
-		}
-	}
+        /**
+         * Populate new items in the list.
+         */
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder viewHolder;
 
-	/**
-	 * A custom Loader that loads all of the installed applications.
-	 */
-	public static class WebListLoader extends AsyncTaskLoader<List<BookLink>> {
+            if (convertView == null) {
+                convertView = mInflater.inflate(mLayout, null);
 
-		private final static String TITLE = "titles";
-		private final static String SUBJECT = "subjects";
-		private final static String AUTHOR = "authors";
-		private final static String AUTHOR_NAME = "firstname";
-		private final static String AUTHOR_LASTNAME = "lastname";
-		private final static String AUTHOR_RELATOR = "relator";
-		private final static String PUBLISHER = "publishers";
-		private final static String COVER = "coverUrl";
-		private final static String DOCLINK = "epubInfo";
-		private final static String DOCID = "id";
+                viewHolder = new ViewHolder();
+                viewHolder.imageView = (ImageView) convertView.findViewById(R.id.epubCover);
+                viewHolder.textViewTitle = (TextView) convertView.findViewById(R.id.epubTitle);
+                viewHolder.textViewAuthor = (TextView) convertView.findViewById(R.id.epubAuthor);
+                viewHolder.textViewLanguage = (TextView) convertView
+                        .findViewById(R.id.epubLanguage);
+                viewHolder.textViewPublisher = (TextView) convertView
+                        .findViewById(R.id.epubPublisher);
 
-		private List<BookLink> mLinks;
-		private int mResultCode;
-		private String mURL;
+                convertView.setTag(viewHolder);
+            } else {
+                viewHolder = (ViewHolder) convertView.getTag();
+            }
 
-		public WebListLoader(Context context, String URL) {
-			super(context);
-			mURL = URL;
-		}
+            BookLink doc = this.getItem(position);
+            if (doc != null) {
 
-		/**
-		 * This is where the bulk of our work is done. This function is called
-		 * in a background thread and should generate a new set of data to be
-		 * published by the loader.
-		 */
-		@Override
-		public List<BookLink> loadInBackground() {
-			List<BookLink> result = null;
-			RestClient client = new RestClient(this.mURL);
-			Log.d("client", mURL);
-			if (!Utils.isNetworkAvailable(this.getContext()))
-				mResultCode = Constants.OFFLINE;
-			else {
-				try {
-					client.Execute(RequestMethod.GET);
-					String responseString = client.getResponse();
-					int responseCode = client.getResponseCode();
-					if (responseCode == Constants.HTTP_RESPONSE_OK) {
-						result = parseXMLResult(responseString);
-					}
-					mResultCode = responseCode;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-			return result;
-		}
+                Metadata meta = doc.getMeta();
+                Author author = meta.getAuthors().size() > 0 ? meta.getAuthors().get(0) : null;
+                String publisher = meta.getPublishers().size() > 0 ? meta.getPublishers().get(0)
+                        : null;
 
-		/**
-		 * Called when there is new data to deliver to the client. The super
-		 * class will take care of delivering it; the implementation here just
-		 * adds a little more logic.
-		 */
-		@Override
-		public void deliverResult(List<BookLink> links) {
-			if (isReset()) {
-				// An async query came in while the loader is stopped. We
-				// don't need the result.
-				if (links != null) {
-					onReleaseResources(links);
-				}
-			}
-			List<BookLink> oldApps = links;
-			mLinks = links;
+                imageLoader.DisplayImage(doc.getCoverUrl(), viewHolder.imageView);
+                viewHolder.textViewTitle.setText(meta.getFirstTitle());
+                viewHolder.textViewLanguage.setText(meta.getLanguage());
 
-			if (isStarted()) {
-				// If the Loader is currently started, we can immediately
-				// deliver its results.
-				super.deliverResult(links);
-			}
+                if (publisher != null)
+                    viewHolder.textViewPublisher.setText(publisher);
+                if (author != null)
+                    viewHolder.textViewAuthor.setText(author.getFirstname() + " "
+                            + author.getLastname());
+            }
 
-			// At this point we can release the resources associated with
-			// 'oldApps' if needed; now that the new result is delivered we
-			// know that it is no longer in use.
-			if (oldApps != null) {
-				onReleaseResources(oldApps);
-			}
-		}
+            return convertView;
+        }
+    }
 
-		/**
-		 * Handles a request to start the Loader.
-		 */
-		@Override
-		protected void onStartLoading() {
-			if (mLinks != null) {
-				deliverResult(mLinks);
-			}
+    public static class WebListLoader extends AsyncTaskLoader<List<BookLink>> {
 
-			if (takeContentChanged() || mLinks == null) {
-				forceLoad();
-			}
-		}
+        private final static String TITLE = "titles";
 
-		/**
-		 * Handles a request to stop the Loader.
-		 */
-		@Override
-		protected void onStopLoading() {
-			// Attempt to cancel the current load task if possible.
-			cancelLoad();
-		}
+        private final static String SUBJECT = "subjects";
 
-		/**
-		 * Handles a request to cancel a load.
-		 */
-		@Override
-		public void onCanceled(List<BookLink> links) {
-			super.onCanceled(links);
+        private final static String AUTHOR = "authors";
 
-			// At this point we can release the resources associated with 'apps'
-			// if needed.
-			onReleaseResources(links);
-		}
+        private final static String AUTHOR_NAME = "firstname";
 
-		/**
-		 * Handles a request to completely reset the Loader.
-		 */
-		@Override
-		protected void onReset() {
-			super.onReset();
+        private final static String AUTHOR_LASTNAME = "lastname";
 
-			// Ensure the loader is stopped
-			onStopLoading();
+        private final static String AUTHOR_RELATOR = "relator";
 
-			// At this point we can release the resources associated with 'apps'
-			// if needed.
-			if (mLinks != null) {
-				onReleaseResources(mLinks);
-				mLinks = null;
-			}
-		}
+        private final static String PUBLISHER = "publishers";
 
-		/**
-		 * Helper function to take care of releasing resources associated with
-		 * an actively loaded data set.
-		 */
-		protected void onReleaseResources(List<BookLink> links) {
-			// For a simple List<> there is nothing to do. For something
-			// like a Cursor, we would close it here.
-		}
+        private final static String COVER = "coverUrl";
 
-		/**
-		 * Parse XML result into data objects.
-		 * 
-		 * @param xmlString
-		 * @return
-		 */
-		private List<BookLink> parseXMLResult(String xmlString) {
+        private final static String DOCLINK = "epubInfo";
 
-			ArrayList<BookLink> docs = null;
-			InputStream xmlInputStream = Utils.parseStringToIS(xmlString);
-			try {
+        private final static String DOCID = "id";
 
-				XmlPullParserFactory factory = XmlPullParserFactory
-						.newInstance();
-				factory.setNamespaceAware(true);
-				XmlPullParser parser = factory.newPullParser();
+        private List<BookLink> mLinks;
 
-				parser.setInput(xmlInputStream, null);
-				int type = parser.getEventType();
+        private int mResultCode;
 
-				BookLink currentItem = null;
-				ArrayList<String> titles = null;
-				ArrayList<String> subjects = null;
-				String name = "";
-				String publisher = "";
-				String authName = "";
-				String authLast = "";
-				List<Author> authors = null;
-				boolean done = false;
-				while (type != XmlPullParser.END_DOCUMENT && !done) {
-					switch (type) {
-					case XmlPullParser.START_DOCUMENT:
-						docs = new ArrayList<BookLink>();
-						break;
-					case XmlPullParser.START_TAG:
-						name = parser.getName();
-						if (name.equalsIgnoreCase(DOCLINK)) {
-							currentItem = new BookLink();
-							titles = new ArrayList<String>();
-							subjects = new ArrayList<String>();
-							authors = new ArrayList<Author>();
-						} else if (currentItem != null) {
-							if (name.equalsIgnoreCase(TITLE)) {
-								titles.add(parser.nextText());
-							} else if (name.equalsIgnoreCase(AUTHOR_NAME)) {
-								authName = parser.nextText();
-							} else if (name.equalsIgnoreCase(AUTHOR_LASTNAME)) {
-								authLast = parser.nextText();
-							} else if (name.equalsIgnoreCase(AUTHOR_RELATOR)) {
-								authors.add(new Author(authName, authLast));
-							} else if (name.equalsIgnoreCase(PUBLISHER)) {
-								publisher = parser.nextText();
-							} else if (name.equalsIgnoreCase(SUBJECT)) {
-								subjects.add(parser.nextText());
-							} else if (name.equalsIgnoreCase(COVER)) {
-								currentItem.setCoverUrl(parser.nextText());
-							} else if (name.equalsIgnoreCase(DOCID)) {
-								currentItem.setId(parser.nextText());
-							}
-						}
+        private String mURL;
 
-						break;
-					case XmlPullParser.END_TAG:
-						name = parser.getName();
-						if (name.equalsIgnoreCase(DOCLINK)
-								&& currentItem != null) {
-							Metadata meta = new Metadata();
-							meta.setTitles(titles);
-							meta.setSubjects(subjects);
-							meta.addPublisher(publisher);
-							if (authors.size() > 0) {
-								meta.setAuthors(authors);
-							}
-							currentItem.setMeta(meta);
-							docs.add(currentItem);
-						} else if (name.equalsIgnoreCase("epubInfoes")) {
-							done = true;
-						}
-						break;
-					}
-					type = parser.next();
-				}
-			} catch (Exception ex) {
-				Log.e("Exception parsing xml", ex.getMessage());
-			}
+        public WebListLoader(Context context, String URL) {
+            super(context);
+            mURL = URL;
+        }
 
-			return docs;
+        /**
+         * This is where the bulk of our work is done. This function is called
+         * in a background thread and should generate a new set of data to be
+         * published by the loader.
+         */
+        @Override
+        public List<BookLink> loadInBackground() {
+            List<BookLink> result = null;
+            RestClient client = new RestClient(this.mURL);
+            Log.d("client", mURL);
+            if (!Utils.isNetworkAvailable(this.getContext()))
+                mResultCode = Constants.OFFLINE;
+            else {
+                try {
+                    client.Execute(RequestMethod.GET);
+                    String responseString = client.getResponse();
+                    int responseCode = client.getResponseCode();
+                    if (responseCode == Constants.HTTP_RESPONSE_OK) {
+                        result = parseXMLResult(responseString);
+                    }
+                    mResultCode = responseCode;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return result;
+        }
 
-		}
+        /**
+         * Called when there is new data to deliver to the client. The super
+         * class will take care of delivering it; the implementation here just
+         * adds a little more logic.
+         */
+        @Override
+        public void deliverResult(List<BookLink> links) {
+            if (isReset()) {
+                // An async query came in while the loader is stopped. We
+                // don't need the result.
+                if (links != null) {
+                    onReleaseResources(links);
+                }
+            }
+            List<BookLink> oldApps = links;
+            mLinks = links;
 
-		public int getResultCode() {
-			return mResultCode;
-		}
-	}
+            if (isStarted()) {
+                // If the Loader is currently started, we can immediately
+                // deliver its results.
+                super.deliverResult(links);
+            }
+
+            // At this point we can release the resources associated with
+            // 'oldApps' if needed; now that the new result is delivered we
+            // know that it is no longer in use.
+            if (oldApps != null) {
+                onReleaseResources(oldApps);
+            }
+        }
+
+        /**
+         * Handles a request to start the Loader.
+         */
+        @Override
+        protected void onStartLoading() {
+            if (mLinks != null) {
+                deliverResult(mLinks);
+            }
+
+            if (takeContentChanged() || mLinks == null) {
+                forceLoad();
+            }
+        }
+
+        /**
+         * Handles a request to stop the Loader.
+         */
+        @Override
+        protected void onStopLoading() {
+            // Attempt to cancel the current load task if possible.
+            cancelLoad();
+        }
+
+        /**
+         * Handles a request to cancel a load.
+         */
+        @Override
+        public void onCanceled(List<BookLink> links) {
+            super.onCanceled(links);
+
+            // At this point we can release the resources associated with 'apps'
+            // if needed.
+            onReleaseResources(links);
+        }
+
+        /**
+         * Handles a request to completely reset the Loader.
+         */
+        @Override
+        protected void onReset() {
+            super.onReset();
+
+            // Ensure the loader is stopped
+            onStopLoading();
+
+            // At this point we can release the resources associated with 'apps'
+            // if needed.
+            if (mLinks != null) {
+                onReleaseResources(mLinks);
+                mLinks = null;
+            }
+        }
+
+        /**
+         * Helper function to take care of releasing resources associated with
+         * an actively loaded data set.
+         */
+        protected void onReleaseResources(List<BookLink> links) {
+            // For a simple List<> there is nothing to do. For something
+            // like a Cursor, we would close it here.
+        }
+
+        /**
+         * Parse XML result into data objects.
+         * 
+         * @param xmlString
+         * @return
+         */
+        private List<BookLink> parseXMLResult(String xmlString) {
+
+            ArrayList<BookLink> docs = null;
+            InputStream xmlInputStream = Utils.parseStringToIS(xmlString);
+            try {
+
+                XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+                factory.setNamespaceAware(true);
+                XmlPullParser parser = factory.newPullParser();
+
+                parser.setInput(xmlInputStream, null);
+                int type = parser.getEventType();
+
+                BookLink currentItem = null;
+                ArrayList<String> titles = null;
+                ArrayList<String> subjects = null;
+                String name = "";
+                String publisher = "";
+                String authName = "";
+                String authLast = "";
+                List<Author> authors = null;
+                boolean done = false;
+                while (type != XmlPullParser.END_DOCUMENT && !done) {
+                    switch (type) {
+                        case XmlPullParser.START_DOCUMENT:
+                            docs = new ArrayList<BookLink>();
+                            break;
+                        case XmlPullParser.START_TAG:
+                            name = parser.getName();
+                            if (name.equalsIgnoreCase(DOCLINK)) {
+                                currentItem = new BookLink();
+                                titles = new ArrayList<String>();
+                                subjects = new ArrayList<String>();
+                                authors = new ArrayList<Author>();
+                            } else if (currentItem != null) {
+                                if (name.equalsIgnoreCase(TITLE)) {
+                                    titles.add(parser.nextText());
+                                } else if (name.equalsIgnoreCase(AUTHOR_NAME)) {
+                                    authName = parser.nextText();
+                                } else if (name.equalsIgnoreCase(AUTHOR_LASTNAME)) {
+                                    authLast = parser.nextText();
+                                } else if (name.equalsIgnoreCase(AUTHOR_RELATOR)) {
+                                    authors.add(new Author(authName, authLast));
+                                } else if (name.equalsIgnoreCase(PUBLISHER)) {
+                                    publisher = parser.nextText();
+                                } else if (name.equalsIgnoreCase(SUBJECT)) {
+                                    subjects.add(parser.nextText());
+                                } else if (name.equalsIgnoreCase(COVER)) {
+                                    currentItem.setCoverUrl(parser.nextText());
+                                } else if (name.equalsIgnoreCase(DOCID)) {
+                                    currentItem.setId(parser.nextText());
+                                }
+                            }
+
+                            break;
+                        case XmlPullParser.END_TAG:
+                            name = parser.getName();
+                            if (name.equalsIgnoreCase(DOCLINK) && currentItem != null) {
+                                Metadata meta = new Metadata();
+                                meta.setTitles(titles);
+                                meta.setSubjects(subjects);
+                                meta.addPublisher(publisher);
+                                if (authors.size() > 0) {
+                                    meta.setAuthors(authors);
+                                }
+                                currentItem.setMeta(meta);
+                                docs.add(currentItem);
+                            } else if (name.equalsIgnoreCase("epubInfoes")) {
+                                done = true;
+                            }
+                            break;
+                    }
+                    type = parser.next();
+                }
+            } catch (Exception ex) {
+                Log.e("Exception parsing xml", ex.getMessage());
+            }
+
+            return docs;
+
+        }
+
+        public int getResultCode() {
+            return mResultCode;
+        }
+    }
 
 }

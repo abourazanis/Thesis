@@ -23,8 +23,7 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.view.MenuItem;
 import android.support.v4.widget.SimpleCursorAdapter;
-import android.text.Spanned;
-import android.util.Log;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,8 +38,6 @@ import android.widget.TextView;
 public class EpubsSearchActivity extends FragmentActivity implements
 		AbsListView.OnScrollListener, LoaderCallbacks<Cursor> {
 
-	private static final String TAG = EpubsSearchActivity.class
-			.getCanonicalName();
 	public ImageCache mImageCache;
 	public boolean mBusy;
 	private SlowAdapter mAdapter;
@@ -235,9 +232,8 @@ public class EpubsSearchActivity extends FragmentActivity implements
 
 			// we use explicit column index values because getColumnIndexOrThrow
 			// was CPU hungry
-
 			String title = mCursor.getString(SearchQuery.TITLE_index);
-			viewHolder.textViewTitle.setText(title);
+			viewHolder.textViewTitle.setText(Html.fromHtml(title));
 			viewHolder.textViewAuthor.setText(mCursor
 					.getString(SearchQuery.AUTH_FIRSTNAME_index)
 					+ " "

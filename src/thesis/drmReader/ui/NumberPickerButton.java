@@ -17,7 +17,6 @@
 package thesis.drmReader.ui;
 
 import thesis.drmReader.R;
-import thesis.drmReader.R.id;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.KeyEvent;

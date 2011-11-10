@@ -4,7 +4,11 @@ import thesis.drmReader.util.Constants;
 import nl.siegmann.epublib.domain.Metadata;
 
 
-
+/**
+ * Class that stores information about epub items in lists
+ * @author tas0s
+ *
+ */
 public class BookLink {
 	private Metadata meta;
 	private String id;

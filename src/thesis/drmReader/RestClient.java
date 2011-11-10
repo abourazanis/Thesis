@@ -2,7 +2,6 @@ package thesis.drmReader;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -180,9 +179,9 @@ public class RestClient {
 			
 			ByteArrayBuffer baf = new ByteArrayBuffer(5000);
 			int current = 0;
-			long total = 0;
+			//long total = 0;
 			while ((current = bis.read()) != -1) {
-				total += current;
+				//total += current;
 				baf.append((byte) current);
 			}
 

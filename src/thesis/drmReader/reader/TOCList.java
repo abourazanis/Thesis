@@ -12,7 +12,6 @@ public class TOCList extends ListActivity {
 	
 	private TOCListAdapter adapter;
 	
-	/** Called when the activity is first created. */
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
 		Bundle extras = getIntent().getExtras();

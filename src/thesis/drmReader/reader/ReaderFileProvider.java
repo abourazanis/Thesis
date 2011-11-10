@@ -9,6 +9,16 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 
+/**
+ * 
+ * @author A.Bourazanis
+ * 
+ * Used to serve external media files in {@link android.webkit.WebView}.
+ * Because {@link android.webkit.WebView} cannot access files in img,javascript and link tags 
+ * when loadData(data, mimeType, encoding) is used.
+ *
+ */
+
 public class ReaderFileProvider extends ContentProvider{
 
 	private static final String URI_PREFIX = "content://thesis.drmReader.reader";

@@ -86,10 +86,7 @@ public class ImageCache {
 
     private Context mCtx;
 
-
     private static ImageCache _instance;
-
-    private static final String TAG = "ImageCache";
 
     private ImageCache(Context ctx) {
         this.mCtx = ctx;

@@ -18,8 +18,6 @@ import nl.siegmann.epublib.service.DecryptService;
 import nl.siegmann.epublib.util.IOUtil;
 import nl.siegmann.epublib.util.ResourceUtil;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.provider.Settings.Secure;
@@ -34,17 +32,30 @@ public class Decrypter implements DecryptService {
 	private String packagePath;
 	private Context context;
 	
+	/**
+	 * Load the native library that is responsible for the management of the decryption libraries
+	 */
 	static{
 		System.loadLibrary("loader");
 		Log.d(TAG, "library loaded");
 	}
 
+	/**
+	 * the native method (JNI) for data decryption
+	 * @param data
+	 * @return
+	 */
 	private native byte[] dec(byte[] data);
 	
 	public Decrypter(Context context){
 		this.context = context;
 	}
 
+	/**
+	 * Initialize the decrypter and copies the native library
+	 * @param epubContainerPath
+	 * @param obj
+	 */
 	public Decrypter(String epubContainerPath, Object obj) {
 		this.epubContainerPath = epubContainerPath;
 		this.context = (Context)obj;
@@ -53,6 +64,9 @@ public class Decrypter implements DecryptService {
 	}
 
 
+	/**
+	 * Extracts the native decryption library from the epub and stores it in the application active directory
+	 */
 	private void copyLib() {
 
 		File destFile = new File(packagePath + "/libdec.so");
@@ -127,6 +141,11 @@ public class Decrypter implements DecryptService {
 		return resource;
 	}
 
+	/**
+	 * Generates a unique per device identifier, produced by a md5 hashed string concatenation with values
+	 * from device specific hardware and software IDs
+	 * @return
+	 */
 	public String getUniqueIdentifier() {
 		String uniqueID = new String();
 
@@ -194,6 +213,10 @@ public class Decrypter implements DecryptService {
 		return uniqueID;
 	}
 	
+	/**
+	 * used by Native code to produce a Java exception for wrong decryption code
+	 * @throws InvalidKeyException
+	 */
 	public void throwException() throws InvalidKeyException{
 		throw new InvalidKeyException("wrong device");
 	}

@@ -17,7 +17,6 @@ import android.os.Environment;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -49,7 +48,6 @@ public class FileBrowser extends ListActivity {
 	private File currentDirectory = new File("/");
 
 	private TextView browserTitle;
-	private ImageView sdcardIcon;
 	private IconifiedTextListAdapter itla;
 	private RelativeLayout browserActionButtons;
 	private Button btnImport;
@@ -60,7 +58,6 @@ public class FileBrowser extends ListActivity {
 		super.onCreate(savedInstanceState);
 		this.setContentView(R.layout.filebrowser);
 		browserTitle = (TextView) findViewById(R.id.browser_title_text);
-		sdcardIcon = (ImageView) findViewById(R.id.browser_title_icon);
 		View up = (View) findViewById(R.id.browser_up);
 		browserActionButtons = (RelativeLayout) findViewById(R.id.browser_actionbuttons);
 		final View cancelButton = findViewById(R.id.overlay_clear);

@@ -50,8 +50,9 @@ public class Utils {
 		return is;
 	}
 	
-	/** Method to check whether external media available and writable. */
-
+	/** 
+	 * Check whether external media is available and writable.
+	 */
 	public static boolean checkExternalMedia() {
 		boolean stat;
 		String state = Environment.getExternalStorageState();
@@ -70,6 +71,11 @@ public class Utils {
 		return stat;
 	}
 	
+	/**
+	 * Chech is network connection is available
+	 * @param context
+	 * @return
+	 */
 	public static boolean isNetworkAvailable(Context context) {
         ConnectivityManager connectivityManager = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
