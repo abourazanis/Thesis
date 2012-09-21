@@ -16,6 +16,7 @@ import thesis.drmReader.ui.QuickAction.QuickAction;
 import thesis.drmReader.util.Constants;
 import thesis.drmReader.util.ImportTask;
 import thesis.drmReader.util.concurrent.BetterApplication;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
@@ -30,12 +31,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.BaseColumns;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.view.Menu;
-import android.support.v4.view.MenuItem;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -44,17 +42,22 @@ import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.animation.AnimationUtils;
 import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AbsListView.OnScrollListener;
-import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.ListView;
-import android.widget.AdapterView.OnItemClickListener;
 
-public class ArchiveListActivity extends FragmentActivity implements
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
+
+@TargetApi(11)
+public class ArchiveListActivity extends SherlockFragmentActivity implements
 		AbsListView.OnScrollListener, LoaderCallbacks<Cursor> {
 
 	private final static String TAG = ArchiveListActivity.class
@@ -274,7 +277,7 @@ public class ArchiveListActivity extends FragmentActivity implements
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.archive_list_menu, menu);
+		getSupportMenuInflater().inflate(R.menu.archive_list_menu, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
 

@@ -165,7 +165,7 @@ public class ReaderUtils {
 
 						// append monocle interface script
 						addJavaScriptLink(doc, headElement,
-								"javascript/interface.js");
+								"javascript/inteface.js");
 
 					}
 					/*

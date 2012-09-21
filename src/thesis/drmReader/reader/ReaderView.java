@@ -27,6 +27,7 @@ import thesis.drmReader.util.concurrent.BetterApplication;
 import thesis.drmReader.util.concurrent.BetterAsyncTask;
 import thesis.drmReader.util.concurrent.BetterAsyncTaskCallable;
 import thesis.sec.Decrypter;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Dialog;
@@ -35,9 +36,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.view.Menu;
-import android.support.v4.view.MenuItem;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -57,7 +55,12 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-public class ReaderView extends FragmentActivity implements SimpleGestureListener,
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
+
+@SuppressLint("NewApi")
+public class ReaderView extends SherlockFragmentActivity implements SimpleGestureListener,
         OnChangedListener, NavigationEventListener {
 
     static class DisplayInfo {
@@ -354,8 +357,7 @@ public class ReaderView extends FragmentActivity implements SimpleGestureListene
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.read_options_menu, menu);
+        this.getSupportMenuInflater().inflate(R.menu.read_options_menu, menu);
         return true;
     }
 

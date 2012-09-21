@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import nl.siegmann.epublib.domain.Metadata;
 import nl.siegmann.epublib.domain.Resource;
 import nl.siegmann.epublib.epub.EpubReader;
-
 import thesis.drmReader.EpubsDatabase;
 import thesis.drmReader.R;
 import thesis.drmReader.RestClient;
@@ -18,8 +17,8 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -27,8 +26,6 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.view.Menu;
-import android.support.v4.view.MenuItem;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,7 +36,11 @@ import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class WebStoreActivity extends FragmentActivity implements
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
+
+public class WebStoreActivity extends SherlockFragmentActivity implements
 		ParentActivity, LoaderCallbacks<String> {
 
 	private static final String STATE_IMPORT_IN_PROGRESS = "thesis.drmReader.ui.download.inprogress";
@@ -128,7 +129,7 @@ public class WebStoreActivity extends FragmentActivity implements
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.store_list_menu, menu);
+		getSupportMenuInflater().inflate(R.menu.store_list_menu, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
 

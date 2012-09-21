@@ -1,4 +1,4 @@
-	package thesis.sec;
+package thesis.sec;
 
 import java.io.File;
 import java.io.FileOutputStream;

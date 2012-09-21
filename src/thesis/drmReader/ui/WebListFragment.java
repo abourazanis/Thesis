@@ -19,12 +19,9 @@ import thesis.drmReader.util.Utils;
 import thesis.imageLazyLoader.ImageLoader;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
-import android.support.v4.app.SupportActivity;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.view.MenuItem;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,9 +31,13 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class WebListFragment extends ListFragment implements LoaderCallbacks<List<BookLink>> {
+import com.actionbarsherlock.app.SherlockActivity;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.app.SherlockListFragment;
+import com.actionbarsherlock.view.MenuItem;
 
-    private ParentActivity mParent;
+public class WebListFragment extends SherlockListFragment implements LoaderCallbacks<List<BookLink>> {
+
 
     // This is the Adapter being used to display the list's data.
     WebListAdapter mAdapter;
@@ -48,15 +49,6 @@ public class WebListFragment extends ListFragment implements LoaderCallbacks<Lis
 
     int mIndex;
 
-    @Override
-    public void onAttach(SupportActivity activity) {
-        super.onAttach(activity);
-        try {
-            mParent = (ParentActivity) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement ParentActivity");
-        }
-    }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -83,18 +75,26 @@ public class WebListFragment extends ListFragment implements LoaderCallbacks<Lis
         // or start a new one.
         getLoaderManager().initLoader(0, null, this);
     }
+    
+    public ParentActivity getParentActivity() {
+        SherlockFragmentActivity activity = this.getSherlockActivity();
+        if (!(activity instanceof ParentActivity)) {
+            throw new IllegalStateException(getClass().getSimpleName() + " must be attached to a ParentActivity.");
+        }
+        return (ParentActivity)activity;
+    }
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         BookLink doc = this.mAdapter.getItem(position);
-        mParent.downloadDocument(doc);
+        getParentActivity().downloadDocument(doc);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_refresh:
-                if (mParent.getActiveFragmentIndex() == mIndex) {
+                if (getParentActivity().getActiveFragmentIndex() == mIndex) {
                     refreshList();
                     return true;
                 }
@@ -107,9 +107,6 @@ public class WebListFragment extends ListFragment implements LoaderCallbacks<Lis
         }
     }
 
-    public void setParent(ParentActivity activity) {
-        mParent = activity;
-    }
 
     @Override
     public Loader<List<BookLink>> onCreateLoader(int id, Bundle args) {
@@ -123,7 +120,7 @@ public class WebListFragment extends ListFragment implements LoaderCallbacks<Lis
         final WebListLoader wl = ((WebListLoader) loader);
         switch (wl.getResultCode()) {
             case Constants.OFFLINE:
-                mParent.displayDialog(Constants.OFFLINE);
+            	getParentActivity().displayDialog(Constants.OFFLINE);
                 break;
             case Constants.HTTP_RESPONSE_OK: {
                 // Set the new data in the adapter.
@@ -131,7 +128,7 @@ public class WebListFragment extends ListFragment implements LoaderCallbacks<Lis
             }
                 break;
             default:// error
-                mParent.displayDialog(Constants.DOWNLOAD_DOCLIST_ALERT);
+            	getParentActivity().displayDialog(Constants.DOWNLOAD_DOCLIST_ALERT);
 
         }
 

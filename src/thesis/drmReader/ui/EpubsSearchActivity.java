@@ -9,6 +9,7 @@ import thesis.drmReader.db.EpubsContract.Epubs;
 import thesis.drmReader.reader.ReaderView;
 import thesis.drmReader.util.Constants;
 import thesis.drmReader.util.concurrent.BetterApplication;
+import android.annotation.TargetApi;
 import android.app.Application;
 import android.app.SearchManager;
 import android.content.Context;
@@ -17,11 +18,9 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.view.MenuItem;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -35,7 +34,11 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class EpubsSearchActivity extends FragmentActivity implements
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.MenuItem;
+
+@TargetApi(11)
+public class EpubsSearchActivity extends SherlockFragmentActivity implements
 		AbsListView.OnScrollListener, LoaderCallbacks<Cursor> {
 
 	public ImageCache mImageCache;
@@ -77,15 +80,15 @@ public class EpubsSearchActivity extends FragmentActivity implements
 				readDoc(String.valueOf(id));
 			}
 		});
-		
+
 		View emptyView = findViewById(android.R.id.empty);
 		if (emptyView != null) {
 			list.setEmptyView(emptyView);
 		}
-		
+
 		getSupportLoaderManager().initLoader(Constants.SEARCH_DOCUMENTS, null,
 				this);
-		
+
 		Application application = getApplication();
 		if (application instanceof BetterApplication) {
 			((BetterApplication) application).setActiveContext(getClass()
@@ -93,8 +96,7 @@ public class EpubsSearchActivity extends FragmentActivity implements
 		}
 
 	}
-	
-	
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Handle item selection
@@ -140,11 +142,10 @@ public class EpubsSearchActivity extends FragmentActivity implements
 		this.setTitle("Search for '" + query + "'");
 		Bundle args = new Bundle();
 		args.putString("query", query);
-		getSupportLoaderManager().restartLoader(Constants.SEARCH_DOCUMENTS, args,
-				this);
+		getSupportLoaderManager().restartLoader(Constants.SEARCH_DOCUMENTS,
+				args, this);
 	}
 
-	
 	private void readDoc(String id) {
 		Intent intent = new Intent(this, ReaderView.class);
 		final String filename = EpubsDatabase.getEpubLocation(id, this);
@@ -167,19 +168,12 @@ public class EpubsSearchActivity extends FragmentActivity implements
 				LANGUAGE, AUTH_FIRSTNAME, AUTH_LASTNAME, PUBLISHER };
 
 		int _ID_index = 0;
-
 		int TITLE_index = 1;
-
 		int DESCRIPTION_index = 2;
-
 		int SUBJECT_index = 3;
-
 		int LANGUAGE_index = 4;
-
 		int AUTH_FIRSTNAME_index = 5;
-
 		int AUTH_LASTNAME_index = 6;
-
 		int PUBLISHER_index = 7;
 	}
 
@@ -289,8 +283,6 @@ public class EpubsSearchActivity extends FragmentActivity implements
 	@Override
 	public void onScroll(AbsListView view, int firstVisibleItem,
 			int visibleItemCount, int totalItemCount) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -323,8 +315,15 @@ public class EpubsSearchActivity extends FragmentActivity implements
 
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		String[] selectionArgs;
+
+		if (args != null)
+			selectionArgs = new String[] { args.getString("query") };
+		else
+			selectionArgs = new String[] {};
+
 		return new CursorLoader(this, EpubSearch.CONTENT_URI_SEARCH,
-				SearchQuery.PROJECTION, null, new String[] { args.getString("query") }, null);
+				SearchQuery.PROJECTION, null, selectionArgs, null);
 	}
 
 	@Override
