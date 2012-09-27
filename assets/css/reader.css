@@ -1,0 +1,7 @@
+body { margin: 0; padding: 0; background: #fff; -webkit-user-select: none; -webkit-text-size-adjust: none;}
+
+#reader { position: absolute; top: 0; left: 0; right: 0; bottom: 0; } 
+
+#reader.night div.monelem_page {background:#191919 !important; color: #DDD !important;}
+#reader.day div.monelem_page {background:white !important; color: black !important;}
+

@@ -5,9 +5,10 @@
     <string name="list_no_items">No documents to display</string>
     <string name="read_item">Read</string>
     <string name="delete_item">Delete</string>
-    <string name="toc">TOC</string>
-    <string name="home">document list</string>
-    <string name="font_size">font size</string>
+    <string name="toc">Table Of Contents</string>
+    <string name="home">Document list</string>
+    <string name="font_size">Font size</string>
+    <string name="night_mode">Day/Night</string>
     <string name="font_size_msg">Set the Font Size</string>
     <string name="tableOfContents">Table Of Contents</string>
     <string name="refresh">refresh</string>

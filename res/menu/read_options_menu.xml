@@ -11,6 +11,11 @@
 		android:icon="@drawable/ic_menu_font">
 	</item>
 	<item 
+		android:id="@+id/night_mode" 
+		android:title="@string/night_mode"
+		android:icon="@drawable/ic_menu_day_night">
+	</item>
+	<item 
 		android:id="@+id/home" 
 		android:title="@string/home"
 		android:icon="@drawable/ic_menu_home">

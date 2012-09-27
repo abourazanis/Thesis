@@ -1,16 +1,19 @@
 var reader;
 var curPage = 1;
 var curPercentage = 0.0;
+var index;
 
 /**
  * Initialize the reader element.
  */
-Monocle.addListener(window, 'load', function() {
+Monocle.Events.listen(window, 'load', function() {
 	reader = Monocle.Reader('reader', null, {
+	  stylesheet: 'body.day, body.day * {color:#000 !important;} body.night, body.night * {color:#DDD !important;}',//for night/day mode
 		flipper : Monocle.Flippers.Instant
-	});
-
-	/* PAGE NUMBER RUNNING HEAD */
+	}, function (){
+	
+	  
+	  /* PAGE NUMBER RUNNING HEAD */
 	var pageNumber = {
 		runners : [],
 		createControlElements : function(page) {
@@ -25,30 +28,63 @@ Monocle.addListener(window, 'load', function() {
 		},
 		update : function(page) {
 			var place = reader.getPlace(page);
-			curPage = place.getLocus().page;
-			// curPage = place.pageNumber();
-		curPercentage = place.percentageThrough();
+			if(place){
+			  curPage = place.pageNumber();
+			   curPercentage = place.percentageThrough();
+			   window.android.setTotalPageNum(place.pagesInComponent());
+			   window.android.setCurPageLocation(curPage, curPercentage);
+			}
 	}
 	}
+	
 	reader.addControl(pageNumber, 'page');
-	reader.addListener('monocle:pagechange', function(evt) {
-		pageNumber.update(evt.monocleData.page);
+	reader.listen('monocle:pagechange', function(evt) {
+	    pageNumber.update(evt.m.page);
 	});
+	 
+	Monocle.Events.listen(window, 'resize', function(){
+	  window.reader.resized();
+	});
+	
+	window.reader.listen('monocle:boundarystart', function(evt) {
+		window.android.navigate(-1);
+	});
+	window.reader.listen('monocle:boundaryend', function(evt) {
+		window.android.navigate(1);
+	});
+	
+	});
+
+	
 });
 
 /**
- * Returns total page number of chapter
+ * set day or night mode of text
+ * 
+ * @param isNightMode
  */
-function getTotalPageNum() {
-	reader.moveTo( {
-		percent : 1.0
-	});
-	window.android.setTotalPageNum(curPage);
-	curPercentage = 0.0;
-	reader.moveTo( {
-		page : 1
-	});
+function toggleDayNight(isNightMode){
+  var frame = reader.dom.find('component');
+  if(isNightMode){
+    document.getElementById("reader").className = "night";
+    frame.contentDocument.getElementsByTagName('body')[0].className = "night";
+  }else{
+    document.getElementById("reader").className = "day";
+    frame.contentDocument.getElementsByTagName('body')[0].className = "day";
+  }
 }
+
+
+/**
+ * set the font scale used by monocle
+ * 
+ * @param fontScale
+ */
+function setFontScale(scale){
+  console.warn('scale: ' + scale);
+  reader.formatting.setFontScale(scale, true);
+}
+
 
 /**
  * Opens by page number
@@ -59,8 +95,8 @@ function openPageByNum(pageNum) {
 	reader.moveTo( {
 		page : pageNum
 	});
-	window.android.setCurPageLocation(curPage, curPercentage);
 }
+
 
 /**
  * Opens by page percentage
@@ -68,28 +104,9 @@ function openPageByNum(pageNum) {
  * @param percentage
  */
 function openPageByPercentage(percentage) {
+  console.warn('openPageByPercentage: ' + percentage);
 	reader.moveTo( {
 		percent : percentage
-	});
-	window.android.setCurPageLocation(curPage, curPercentage);
-}
-
-/**
- * Opens previous page
- */
-function prevPage() {
-	reader.moveTo( {
-		direction : -1
-	});
-	window.android.setCurPageLocation(curPage, curPercentage);
-}
-
-/**
- * Opens next page
- */
-function nextPage() {
-	reader.moveTo( {
-		direction : 1
 	});
 	window.android.setCurPageLocation(curPage, curPercentage);
 }
