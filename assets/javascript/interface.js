@@ -53,10 +53,37 @@ Monocle.Events.listen(window, 'load', function() {
 		window.android.navigate(1);
 	});
 	
+	
+	window.reader.listen('monocle:loaded', function(evt) {
+		window.android.updateViewValues();
+	});
+	
+	
 	});
 
 	
 });
+
+
+/**
+ * update monocle settings (font, page etc)
+ * 
+ * @param percentage
+ * @param fontScale
+ */
+function updateMonocle(percentage, fontScale){
+  var place = reader.getPlace();
+			if(place){
+			   var activePercentage = place.percentageThrough();
+			   if(activePercentage != percentage)
+			      openPageByPercentage(percentage);
+			}
+			
+			var scale = reader.formatting.getFontScale();
+			if((scale == null) || (scale != fontScale))
+			    setFontScale(fontScale);
+			
+}
 
 /**
  * set day or night mode of text
@@ -81,7 +108,6 @@ function toggleDayNight(isNightMode){
  * @param fontScale
  */
 function setFontScale(scale){
-  console.warn('scale: ' + scale);
   reader.formatting.setFontScale(scale, true);
 }
 
@@ -104,9 +130,7 @@ function openPageByNum(pageNum) {
  * @param percentage
  */
 function openPageByPercentage(percentage) {
-  console.warn('openPageByPercentage: ' + percentage);
 	reader.moveTo( {
 		percent : percentage
 	});
-	window.android.setCurPageLocation(curPage, curPercentage);
 }

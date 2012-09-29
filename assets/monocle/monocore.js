@@ -3,6 +3,10 @@
  *
  * Copyright 2012, Joseph Pearson
  * Licensed under the MIT license.
+ * 
+ * 
+ * 
+ * getFontScale addition by A.Bourazanis
  */
 
 
@@ -1709,6 +1713,10 @@ Monocle.Formatting = function (reader, optStyles, optScale) {
       p.reader.recalculateDimensions(false);
     }
   }
+  
+  function getFontScale(){
+    return p.fontScale;
+  }
 
 
   function adjustFontScaleForDoc(doc, scale) {
@@ -1778,6 +1786,7 @@ Monocle.Formatting = function (reader, optStyles, optScale) {
   API.updatePageStyles = updatePageStyles;
   API.removePageStyles = removePageStyles;
   API.setFontScale = setFontScale;
+  API.getFontScale = getFontScale;
 
   initialize();
 

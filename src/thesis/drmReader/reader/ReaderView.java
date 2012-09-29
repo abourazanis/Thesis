@@ -58,26 +58,9 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 
-
 @SuppressLint("NewApi")
 public class ReaderView extends SherlockFragmentActivity implements
 		SimpleGestureListener, NavigationEventListener, OnChangedListener {
-
-//	static class DisplayInfo {
-//		static float density;
-//
-//		static int densityDpi;
-//
-//		static int widthPixels;
-//
-//		static int heightPixels;
-//
-//		static float scaledDensity;
-//
-//		static float xdpi;
-//
-//		static float ydpi;
-//	}
 
 	private static final int FONT_SIZE_MENU = 1;
 
@@ -96,7 +79,7 @@ public class ReaderView extends SherlockFragmentActivity implements
 	private static final int HANDLER_HIDE_OSD = 6;
 
 	private static final int HANDLER_NAVIGATE = 7;
-	
+
 	private static final int HANDLER_DAYNIGHT = 8;
 
 	private static final int TOC_LIST = 100;
@@ -134,38 +117,46 @@ public class ReaderView extends SherlockFragmentActivity implements
 	private String cache;
 
 	// navigation variables
-	private int mCurPage;// = 1;
+	private int mCurPage = 1;
 
-	private float mCurPercentage;// = 0.0f;
+	private float mCurPercentage = 0.0f;
+	private float mPercentage = 0.0f;
 
 	private int mMaxPage;// = 1;
-	private int mCurFontScale;
-	private boolean mCurNightMode;
-	
+	private int mCurFontScale = 5;
+	private boolean mCurNightMode = false;
+
 	private String[] fontScales;
 
 	private Book currentDoc;
 
 	private Navigator navigator;
 
-	private Bundle mState;
 
 	@Override
 	public void onSaveInstanceState(Bundle savedInstanceState) {
-		super.onSaveInstanceState(savedInstanceState);
 		savedInstanceState.putString("curResourceHref", navigator
 				.getCurrentResource().getHref());
 		savedInstanceState.putInt("curPage", mCurPage);
 		savedInstanceState.putInt("curFontScale", mCurFontScale);
 		savedInstanceState.putBoolean("curNightMode", mCurNightMode);
 		savedInstanceState.putFloat("curPercentage", mCurPercentage);
-		mState = null;
+		savedInstanceState.putBoolean("isCoverResource", isCoverResource);
+
+		super.onSaveInstanceState(savedInstanceState);
+
 	}
 
 	@Override
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 		super.onRestoreInstanceState(savedInstanceState);
-		mState = savedInstanceState;
+		
+		mCurPage = savedInstanceState.getInt("curPage", 1);
+		mCurPercentage = mPercentage = savedInstanceState.getFloat("curPercentage", 0);
+		mCurFontScale = savedInstanceState.getInt("curFontScale", 5);
+		mCurNightMode = savedInstanceState.getBoolean("curNightMode", false);
+		isCoverResource = savedInstanceState.getBoolean("isCoverResource", false);
+		
 		navigator.gotoResource(savedInstanceState.getString("curResourceHref"),
 				this);
 	}
@@ -173,6 +164,13 @@ public class ReaderView extends SherlockFragmentActivity implements
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		fontScales = new String[16];
+		int num = 5;
+		for (int i = 0; i < fontScales.length; i++) {
+			fontScales[i] = Double.toString(num / 10.0);
+			num++;
+		}
 
 		setUpUI();
 		cache = this.getCacheDir().getAbsolutePath() + "/readertmp/";
@@ -240,7 +238,10 @@ public class ReaderView extends SherlockFragmentActivity implements
 		sbPages = (SeekBar) findViewById(R.id.sbPages);
 
 		detector = new SimpleGestureFilter(this, this);
-		detector.setMode(SimpleGestureFilter.MODE_DOUBLETAP);//catch only doubletap - let other pass
+		detector.setMode(SimpleGestureFilter.MODE_DOUBLETAP);// catch only
+																// doubletap -
+																// let other
+																// pass
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -256,8 +257,6 @@ public class ReaderView extends SherlockFragmentActivity implements
 		webView.setWebViewClient(new WebViewClient() {
 
 			public void onPageFinished(WebView view, String url) {
-				Log.i(TAG, "[CALLBACK_WV] void onPageFinished(view:" + view
-						+ ", url:" + url + ")");
 				if (isCoverResource)
 					Toast.makeText(getApplicationContext(),
 							"Double tap to open book.", Toast.LENGTH_LONG)
@@ -277,7 +276,11 @@ public class ReaderView extends SherlockFragmentActivity implements
 
 		webSettings = webView.getSettings();
 		webSettings.setJavaScriptEnabled(true);
-		webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY); //remove right space from webview
+		webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY); // remove
+																	// right
+																	// space
+																	// from
+																	// webview
 
 		// SeekBar change listener
 		sbPages.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
@@ -312,9 +315,11 @@ public class ReaderView extends SherlockFragmentActivity implements
 			case KeyEvent.KEYCODE_DPAD_CENTER:
 				navigate(1);
 				if (!isOsdOn) {
-					handler.sendMessage(Message.obtain(handler, HANDLER_SHOW_OSD));
+					handler.sendMessage(Message.obtain(handler,
+							HANDLER_SHOW_OSD));
 				} else {
-					handler.sendMessage(Message.obtain(handler, HANDLER_HIDE_OSD));
+					handler.sendMessage(Message.obtain(handler,
+							HANDLER_HIDE_OSD));
 				}
 				break;
 
@@ -327,7 +332,8 @@ public class ReaderView extends SherlockFragmentActivity implements
 
 			case KeyEvent.KEYCODE_BACK:
 				if (isOsdOn) {
-					handler.sendMessage(Message.obtain(handler, HANDLER_HIDE_OSD));
+					handler.sendMessage(Message.obtain(handler,
+							HANDLER_HIDE_OSD));
 					return false;
 				}
 				break;
@@ -355,7 +361,6 @@ public class ReaderView extends SherlockFragmentActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.toc:
-			Log.d(TAG, "TOC Selected");
 			Iterator<TOCReference> it = currentDoc.getTableOfContents()
 					.getTocReferences().iterator();
 			ArrayList<String> titles = new ArrayList<String>();
@@ -372,22 +377,16 @@ public class ReaderView extends SherlockFragmentActivity implements
 			this.startActivityForResult(i, TOC_LIST);
 			return true;
 		case R.id.font_size:
-			Log.d(TAG, "Font Selected");
 			showDialog(FONT_SIZE_MENU);
 			return true;
 		case R.id.night_mode:
-			Log.d(TAG, "NIGHTMODE Selected");
 			mCurNightMode = !mCurNightMode;
-			tvPages.setTextColor(mCurNightMode?Color.WHITE:Color.BLACK);
-			tvChapter.setTextColor(mCurNightMode?Color.WHITE:Color.BLACK);
 			handler.sendMessage(Message.obtain(handler, HANDLER_DAYNIGHT));
 			return true;
 		case R.id.home:
-			Log.d(TAG, "Home Selected");
 			super.onBackPressed();
 			return true;
 		default:
-			Log.d(TAG, "Default Selected");
 			return super.onOptionsItemSelected(item);
 		}
 	}
@@ -419,7 +418,7 @@ public class ReaderView extends SherlockFragmentActivity implements
 
 		switch (id) {
 		case FONT_SIZE_MENU:
-			
+
 			Dialog fontDialog = new Dialog(this);
 
 			fontDialog.setContentView(R.layout.dialog_fontsize);
@@ -429,17 +428,9 @@ public class ReaderView extends SherlockFragmentActivity implements
 			NumberPicker picker = (NumberPicker) fontDialog
 					.findViewById(R.id.num_picker);
 
-			fontScales = new String[16];
-			 int num = 5;
-			for(int i=0; i<fontScales.length; i++){
-				fontScales[i] = Double.toString(num/10.0);
-			   num++;
-			}
-			
 			picker.setOnChangeListener(this);
-			picker.setRange(0, fontScales.length-1, fontScales);
-			picker.setCurrent(5); //1.0;
-			mCurFontScale = 5;
+			picker.setRange(0, fontScales.length - 1, fontScales);
+			picker.setCurrent(mCurFontScale); // 1.0
 			return fontDialog;
 		default:
 			return super.onCreateDialog(id);
@@ -456,8 +447,6 @@ public class ReaderView extends SherlockFragmentActivity implements
 		this.detector.onTouchEvent(me);
 		return super.dispatchTouchEvent(me);
 	}
-
-
 
 	@Override
 	public void onDoubleTap() {
@@ -482,6 +471,7 @@ public class ReaderView extends SherlockFragmentActivity implements
 		if (direction > 0)// next chapter
 			navigator.gotoNextSpineSection(this);
 		else {
+			mPercentage = 1.0f; //end of chapter
 			navigator.gotoPreviousSpineSection(this);
 			webView.loadUrl("javascript:openPageByPercentage(1.0)");
 		}
@@ -491,15 +481,13 @@ public class ReaderView extends SherlockFragmentActivity implements
 	private void readDocumentSpineEntry() {
 		new LoadDocTask(this).execute();
 	}
-	
+
 	@Override
 	public void onChanged(NumberPicker picker, int oldVal, int newVal) {
 		mCurFontScale = newVal;
 		webView.loadUrl("javascript:setFontScale(" + fontScales[newVal] + ")");
-		
-	}
 
-	
+	}
 
 	private class LoadDocTask extends BetterAsyncTask<Void, Void, String>
 			implements BetterAsyncTaskCallable<Void, Void, String> {
@@ -583,23 +571,19 @@ public class ReaderView extends SherlockFragmentActivity implements
 			handler.sendMessage(Message.obtain(handler, HANDLER_NAVIGATE,
 					(Integer) direction));
 		}
+
+		public void updateViewValues() {
+			
+			webView.loadUrl("javascript:updateMonocle(" + mPercentage + "," +  fontScales[mCurFontScale] + ")");
+			handler.sendMessage(Message.obtain(handler, HANDLER_DAYNIGHT));
+		}
 	}
 
 	@Override
 	public void navigationPerformed(NavigationEvent navigationEvent) {
 		if (!navigationEvent.isBookChanged()) {
-			if (navigationEvent.isResourceChanged()) {
+			if (navigationEvent.isResourceChanged() || isCoverResource) {
 				readDocumentSpineEntry();
-				if (mState != null) {
-					mCurPage = mState.getInt("curPage");
-					mCurPercentage = mState.getFloat("curPercentage");
-					mCurNightMode = mState.getBoolean("curNightMode", false);
-					mCurFontScale = mState.getInt("curFontScale",5);
-					mState = null;
-				} else {
-					mCurPage = 1;
-					mCurPercentage = 0.0f;
-				}
 			}
 		}
 	}
@@ -652,7 +636,11 @@ public class ReaderView extends SherlockFragmentActivity implements
 				navigate((Integer) msg.obj);
 				break;
 			case HANDLER_DAYNIGHT:
-				webView.loadUrl("javascript:toggleDayNight(" + mCurNightMode + ")");
+				tvPages.setTextColor(mCurNightMode ? Color.WHITE : Color.BLACK);
+				tvChapter.setTextColor(mCurNightMode ? Color.WHITE
+						: Color.BLACK);
+				webView.loadUrl("javascript:toggleDayNight(" + mCurNightMode
+						+ ")");
 				break;
 			}
 		}
