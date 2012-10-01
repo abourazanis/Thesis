@@ -193,8 +193,7 @@ public class ReaderUtils {
 			String path) {
 		Element scriptElement = doc.createElement("script");
 		scriptElement.setAttribute("type", "text/javascript");
-		scriptElement.setAttribute("src", "url('file:///android_asset/" + path
-				+ "')");
+		scriptElement.setAttribute("src", "file:///android_asset/" + path);
 		headElement.appendChild(scriptElement);
 		headElement.appendChild(doc.createTextNode("\n"));
 	}
@@ -211,8 +210,7 @@ public class ReaderUtils {
 		Element cssElement = doc.createElement("link");
 		cssElement.setAttribute("rel", "stylesheet");
 		cssElement.setAttribute("type", "text/css");
-		cssElement.setAttribute("href", "url('file:///android_asset/" + path
-				+ "')");
+		cssElement.setAttribute("href", "file:///android_asset/" + path);
 		headElement.appendChild(cssElement);
 		headElement.appendChild(doc.createTextNode("\n"));
 	}

@@ -81,6 +81,8 @@ public class ReaderView extends SherlockFragmentActivity implements
 	private static final int HANDLER_NAVIGATE = 7;
 
 	private static final int HANDLER_DAYNIGHT = 8;
+	
+	private static final int HANDLER_UPDATE_MONOCLE = 9;
 
 	private static final int TOC_LIST = 100;
 
@@ -519,7 +521,7 @@ public class ReaderView extends SherlockFragmentActivity implements
 							.getCurrentResource(),
 							((ReaderView) context).currentDoc);
 			((ReaderView) context).webView.loadDataWithBaseURL(null, result,
-					null, "utf-8", null);
+					"text/html", "utf-8", null);
 			// problem: http://code.google.com/p/android/issues/detail?id=1733
 			// webView.loadData(result, "text/html", "utf-8");
 
@@ -574,7 +576,10 @@ public class ReaderView extends SherlockFragmentActivity implements
 
 		public void updateViewValues() {
 			
-			webView.loadUrl("javascript:updateMonocle(" + mPercentage + "," +  fontScales[mCurFontScale] + ")");
+			// Future versions of WebView may not support method use on other thread..
+			// so we use handler to call methods on UI thread..
+			handler.sendMessage(Message.obtain(handler, HANDLER_UPDATE_MONOCLE));
+			
 			handler.sendMessage(Message.obtain(handler, HANDLER_DAYNIGHT));
 		}
 	}
@@ -642,6 +647,10 @@ public class ReaderView extends SherlockFragmentActivity implements
 				webView.loadUrl("javascript:toggleDayNight(" + mCurNightMode
 						+ ")");
 				break;
+			case HANDLER_UPDATE_MONOCLE:
+				webView.loadUrl("javascript:updateMonocle(" + mPercentage + "," +  fontScales[mCurFontScale] + ")");
+				break;
+				
 			}
 		}
 	};
