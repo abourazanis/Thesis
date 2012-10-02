@@ -48,6 +48,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
@@ -56,7 +57,6 @@ import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
 
 @SuppressLint("NewApi")
 public class ReaderView extends SherlockFragmentActivity implements
@@ -238,6 +238,53 @@ public class ReaderView extends SherlockFragmentActivity implements
 		tvPageTitle = (TextView) findViewById(R.id.tvPageTitle);
 		tvPageNumber = (TextView) findViewById(R.id.tvPageNumber);
 		sbPages = (SeekBar) findViewById(R.id.sbPages);
+		
+		//set up menu buttons
+		
+		Button btnTOC = (Button)findViewById(R.id.btnTOC);
+		Button btnDayNight = (Button)findViewById(R.id.btnDayNight);
+		Button btnFont = (Button)findViewById(R.id.btnFont);
+		Button btnHome = (Button)findViewById(R.id.btnHome);
+		
+		
+		btnTOC.setOnClickListener(new View.OnClickListener() {
+		    public void onClick(View v) {
+		    	Iterator<TOCReference> it = currentDoc.getTableOfContents()
+						.getTocReferences().iterator();
+				ArrayList<String> titles = new ArrayList<String>();
+				while (it.hasNext()) {
+					TOCReference ref = (TOCReference) it.next();
+					titles.add(ref.getTitle());
+				}
+				Intent i = new Intent(ReaderView.this, TOCList.class);
+				i.putStringArrayListExtra("titles", titles);
+				i.putExtra(
+						"currentTitle",
+						ReaderUtils.getChapterName(currentDoc,
+								navigator.getCurrentResource()));
+				ReaderView.this.startActivityForResult(i, TOC_LIST);
+		    }
+		});
+		
+		btnDayNight.setOnClickListener(new View.OnClickListener() {
+		    public void onClick(View v) {
+		    	mCurNightMode = !mCurNightMode;
+				handler.sendMessage(Message.obtain(handler, HANDLER_DAYNIGHT));
+		    }
+		});
+		
+		btnFont.setOnClickListener(new View.OnClickListener() {
+		    public void onClick(View v) {
+		    	showDialog(FONT_SIZE_MENU);
+		    }
+		});
+		
+		btnHome.setOnClickListener(new View.OnClickListener() {
+		    public void onClick(View v) {
+		        ReaderView.this.onBackPressed();
+		    }
+		});
+		
 
 		detector = new SimpleGestureFilter(this, this);
 		detector.setMode(SimpleGestureFilter.MODE_DOUBLETAP);// catch only
@@ -345,53 +392,6 @@ public class ReaderView extends SherlockFragmentActivity implements
 		return super.dispatchKeyEvent(event);
 	}
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		this.getSupportMenuInflater().inflate(R.menu.read_options_menu, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-		super.onPrepareOptionsMenu(menu);
-		menu.findItem(R.id.font_size).setVisible(!isCoverResource);
-		menu.findItem(R.id.night_mode).setVisible(!isCoverResource);
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.toc:
-			Iterator<TOCReference> it = currentDoc.getTableOfContents()
-					.getTocReferences().iterator();
-			ArrayList<String> titles = new ArrayList<String>();
-			while (it.hasNext()) {
-				TOCReference ref = (TOCReference) it.next();
-				titles.add(ref.getTitle());
-			}
-			Intent i = new Intent(this, TOCList.class);
-			i.putStringArrayListExtra("titles", titles);
-			i.putExtra(
-					"currentTitle",
-					ReaderUtils.getChapterName(currentDoc,
-							navigator.getCurrentResource()));
-			this.startActivityForResult(i, TOC_LIST);
-			return true;
-		case R.id.font_size:
-			showDialog(FONT_SIZE_MENU);
-			return true;
-		case R.id.night_mode:
-			mCurNightMode = !mCurNightMode;
-			handler.sendMessage(Message.obtain(handler, HANDLER_DAYNIGHT));
-			return true;
-		case R.id.home:
-			super.onBackPressed();
-			return true;
-		default:
-			return super.onOptionsItemSelected(item);
-		}
-	}
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -665,6 +665,13 @@ public class ReaderView extends SherlockFragmentActivity implements
 				navigator.getCurrentResource()));
 		tvPageNumber.setText(String.valueOf(curPage) + "/"
 				+ String.valueOf(mMaxPage));
+		if(mMaxPage == 1){
+			tvPageNumber.setVisibility(TextView.GONE);
+			sbPages.setVisibility(SeekBar.GONE);
+		}else{
+			tvPageNumber.setVisibility(TextView.VISIBLE);
+			sbPages.setVisibility(SeekBar.VISIBLE);
+		}
 	}
 
 	/**

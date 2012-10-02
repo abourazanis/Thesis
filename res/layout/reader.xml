@@ -1,111 +1,178 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical" 
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent">
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
 
-	<!-- Book Layer -->
-	<FrameLayout
-		android:layout_width="fill_parent"
-		android:layout_height="fill_parent">
-		
+    <!-- Book Layer -->
 
-		<!-- Viewing webview -->
-		<WebView 
-			android:id="@+id/webView"
-			android:layout_width="fill_parent"
-			android:layout_height="fill_parent"/>
-			
-		<!-- Tail Infos -->
-		<FrameLayout
-			android:layout_width="fill_parent"
-			android:layout_height="22dp"
-			android:layout_gravity="bottom">
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
 
-			<TextView
-			    android:id="@+id/tvChapter"
-			    android:layout_width="200dp"
-			    android:layout_height="fill_parent"
-			    android:layout_gravity="left"
-			    android:layout_marginLeft="10dp"
-			    android:layout_marginTop="8dp"
-			    android:ellipsize="marquee"
-			    android:lines="1"
-			    android:textSize="4pt" />
+        <!-- Viewing webview -->
 
-			<TextView
-			    android:id="@+id/tvPages"
-			    android:layout_width="80dp"
-			    android:layout_height="fill_parent"
-			    android:layout_gravity="right"
-			    android:layout_marginRight="10dp"
-			    android:layout_marginTop="8dp"
-			    android:gravity="right"
-			    android:textSize="4pt" />
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent" />
 
-		</FrameLayout>
-	</FrameLayout>
+        <!-- Tail Infos -->
 
-	<!-- OSD Layer -->
-	<FrameLayout
-		android:id="@+id/flOSD"
-		android:layout_width="fill_parent"
-		android:layout_height="fill_parent"
-		android:visibility="gone">
-		<RelativeLayout
-			android:background="#aa333333"
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content"
-			android:layout_gravity="top" >
-			<TextView
-				android:id="@+id/tvInfo"
-				android:layout_width="fill_parent"
-				android:layout_height="wrap_content"
-				android:layout_gravity="top"
-				android:layout_margin="5dp"
-				android:gravity="center"
-				android:textColor="#fff"
-				android:textSize="15dp" />
-				<TextView
-				android:id="@+id/tvPageTitle"
-				android:layout_width="fill_parent"
-				android:layout_height="wrap_content"
-				android:layout_gravity="bottom"
-				android:layout_marginTop="5dp"
-				android:layout_marginLeft="10dp"
-				android:layout_marginRight="10dp"
-				android:gravity="center_horizontal"
-				android:textColor="#fff"
-				android:textSize="20dp"
-				android:ellipsize="marquee"
-				android:layout_below="@id/tvInfo"
-				 />
-		</RelativeLayout>
-		<LinearLayout
-			android:id="@+id/llControls"
-			android:background="#aa333333"
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content"
-			android:orientation="vertical"
-			android:padding="10dp"
-			android:layout_gravity="bottom" >
-			<TextView
-				android:id="@+id/tvPageNumber"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_marginTop="0dp"
-				android:layout_gravity="center_horizontal"
-				android:gravity="center"
-				android:textColor="#fff"
-				android:textSize="20dp"
-				android:lines="1"
-				android:ellipsize="end" />
-			<SeekBar
-				android:id="@+id/sbPages"
-				android:layout_width="fill_parent"
-				android:layout_height="wrap_content"
-				android:layout_gravity="center_horizontal|center_vertical"
-				android:layout_marginTop="10dp" />
-		</LinearLayout>
-	</FrameLayout>
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="22dp"
+            android:layout_gravity="bottom" >
+
+            <TextView
+                android:id="@+id/tvChapter"
+                android:layout_width="200dp"
+                android:layout_height="fill_parent"
+                android:layout_gravity="left"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="8dp"
+                android:ellipsize="marquee"
+                android:lines="1"
+                android:textSize="4pt" />
+
+            <TextView
+                android:id="@+id/tvPages"
+                android:layout_width="80dp"
+                android:layout_height="fill_parent"
+                android:layout_gravity="right"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="8dp"
+                android:gravity="right"
+                android:textSize="4pt" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <!-- OSD Layer -->
+
+    <FrameLayout
+        android:id="@+id/flOSD"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:visibility="gone" >
+
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:background="#aa333333" >
+
+            <TextView
+                android:id="@+id/tvInfo"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:layout_margin="5dp"
+                android:gravity="center"
+                android:textColor="#fff"
+                android:textSize="15dp" />
+
+            <TextView
+                android:id="@+id/tvPageTitle"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvInfo"
+                android:layout_gravity="bottom"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="5dp"
+                android:ellipsize="marquee"
+                android:gravity="center_horizontal"
+                android:textColor="#fff"
+                android:textSize="20dp" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:id="@+id/llControls"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="#aa333333"
+            android:orientation="vertical"
+            android:paddingTop="10dp"
+            >
+
+            <TextView
+                android:id="@+id/tvPageNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="0dp"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:lines="1"
+                android:textColor="#fff"
+                android:textSize="15dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp" />
+
+            <SeekBar
+                android:id="@+id/sbPages"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal|center_vertical"
+                android:layout_marginTop="7dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp" />
+
+            <LinearLayout
+                android:id="@+id/llMenu"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="5dp"
+                >
+
+                <Button
+                    android:id="@+id/btnTOC"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/toc"
+                    android:textColor="#fff"
+                	android:textSize="10dp"
+                	android:text="@string/toc"
+                	android:background="@drawable/btn_default_holo_dark"
+                     />
+                <Button
+                    android:id="@+id/btnDayNight"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/daynight"
+                    android:textColor="#fff"
+                	android:textSize="10dp"
+                	android:text="@string/night_mode"
+                	android:background="@drawable/btn_default_holo_dark"
+                     />
+                <Button
+                    android:id="@+id/btnFont"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/font"
+                    android:textColor="#fff"
+                	android:textSize="10dp"
+                	android:text="@string/font_size"
+                	android:background="@drawable/btn_default_holo_dark"
+                     />
+                <Button
+                    android:id="@+id/btnHome"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:layout_weight="1"
+                    android:drawableTop="@drawable/home"
+                    android:textColor="#fff"
+                	android:textSize="10dp"
+                	android:text="@string/home"
+                	android:background="@drawable/btn_default_holo_dark"
+                    />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
 </FrameLayout>

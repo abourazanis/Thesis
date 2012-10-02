@@ -1,6 +1,7 @@
 package thesis.drmReader.reader;
 
 import android.app.Activity;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
@@ -163,7 +164,8 @@ public class SimpleGestureFilter extends SimpleOnGestureListener{
 
 	 @Override
 	 public boolean onSingleTapConfirmed(MotionEvent arg0) {
-		 if(this.mode == MODE_DYNAMIC){        // we owe an ACTION_UP, so we fake an       
+		 if((this.mode == MODE_DYNAMIC)|| (this.mode == MODE_DOUBLETAP)){    
+			 // we owe an ACTION_UP, so we fake an       
 		     arg0.setAction(ACTION_FAKE);      //action which will be converted to an ACTION_UP later.                                    
 		     return this.context.dispatchTouchEvent(arg0);  
 		  }   
