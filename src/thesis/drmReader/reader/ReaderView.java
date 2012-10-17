@@ -470,9 +470,10 @@ public class ReaderView extends SherlockFragmentActivity implements
 
 	private void navigate(int direction/* page */) {
 
-		if (direction > 0)// next chapter
+		if (direction > 0){// next chapter
+			mPercentage = 0.0f;
 			navigator.gotoNextSpineSection(this);
-		else {
+		}else {
 			mPercentage = 1.0f; //end of chapter
 			navigator.gotoPreviousSpineSection(this);
 			webView.loadUrl("javascript:openPageByPercentage(1.0)");

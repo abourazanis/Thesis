@@ -13,7 +13,7 @@
 		android:smallScreens="true"
 		android:anyDensity="true" />
 
-    <application android:name="DrmReaderApplication" android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true" android:theme="@style/Theme.Sherlock">
+    <application android:name="DrmReaderApplication" android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="false" android:theme="@style/Theme.Sherlock">
     <activity android:name=".ui.ArchiveListActivity"
                   android:label="@string/app_name"
                   android:launchMode="singleTop">

@@ -30,21 +30,22 @@ public class Constants {
 	 * Restful service urls for the Emulator
 	 */
 	
-	/*
+	
 	public final static String URL = "http://10.0.2.2:8080/thesis.server/rest/epubs";
 	public final static String URL_NEW = "http://10.0.2.2:8080/thesis.server/rest/epubs/new";
 	public final static String URL_TOP = "http://10.0.2.2:8080/thesis.server/rest/epubs/toppicks";
 	public final static String GETDOCURL = "http://10.0.2.2:8080/thesis.server/rest/epubs/";
 	public final static String COVERS_URL = "http://10.0.2.2:8080/thesis.server/epubs";
-	*/
+	
 	
 	/**
 	 * Restful service urls for a device in the same LAN with the server
 	 */
+	/*
 	public final static String URL = "http://192.168.2.3:8080/thesis.server/rest/epubs";
     public final static String URL_NEW = "http://192.168.2.3:8080/thesis.server/rest/epubs/new";
     public final static String URL_TOP = "http://192.168.2.3:8080/thesis.server/rest/epubs/toppicks";
     public final static String GETDOCURL = "http://192.168.2.3:8080/thesis.server/rest/epubs/";
     public final static String COVERS_URL = "http://192.168.2.3:8080/thesis.server/epubs";
-
+*/
 }
